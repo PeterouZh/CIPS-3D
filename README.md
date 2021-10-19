@@ -1,6 +1,7 @@
 ## CIPS-3D
 
-This repository will contain the code of the paper, [CIPS-3D: A 3D-Aware Generator of GANs Based on Conditionally-Independent Pixel Synthesis]().
+This repository will contain the code of the paper, </br > 
+[CIPS-3D: A 3D-Aware Generator of GANs Based on Conditionally-Independent Pixel Synthesis]().
 
 
 We are planning to publish the training code here in December. But if the github star reaches two hundred, I will advance the date. Stay tuned :clock10:.
@@ -20,6 +21,14 @@ https://user-images.githubusercontent.com/26176709/137924557-1aa23be9-d079-472e-
 
 https://user-images.githubusercontent.com/26176709/137924581-f5dbf759-1c8c-4dc3-9b85-26f215f0fde0.mp4
 
+
+## Mirror symmetry problem
+
+<img src="./.github/mirror_symm.png" width="800">
+
+The direction of the bangs changes suddenly near the yaw angle of $\frac{\pi}{2}$. We propose to use an auxiliary discriminator to solve this problem (please see the paper).
+
+Note that in the initial stage of training, the auxiliary discriminator must dominate the generator more than the main discriminator does. Otherwise, if the main discriminator dominates the generator, the mirror symmetry problem will still occur. In practice, progressive training is able to guarantee this. We have trained many times from scratch. Adding an auxiliary discriminator stably solves the mirror symmetry problem. If you find any problems with this idea, please open an issue. 
 
 ## Envs
 
@@ -47,7 +56,7 @@ If you find our work useful in your research, please cite:
 
 - pi-GAN from [https://github.com/marcoamonteiro/pi-GAN](https://github.com/marcoamonteiro/pi-GAN)
 - CIPS from [https://github.com/saic-mdal/CIPS](https://github.com/saic-mdal/CIPS)
-
-
-
+- StyleGAN2 from [https://github.com/rosinality/stylegan2-pytorch](https://github.com/rosinality/stylegan2-pytorch)
+- torch-fidelity from [https://github.com/toshas/torch-fidelity](https://github.com/toshas/torch-fidelity)
+- StudioGAN from [https://github.com/POSTECH-CVLab/PyTorch-StudioGAN](https://github.com/POSTECH-CVLab/PyTorch-StudioGAN)
 
