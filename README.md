@@ -26,7 +26,7 @@ https://user-images.githubusercontent.com/26176709/137924581-f5dbf759-1c8c-4dc3-
 
 <img src="./.github/mirror_symm.png" width="800">
 
-The direction of the bangs changes suddenly near the yaw angle of $\frac{\pi}{2}$. We propose to use an auxiliary discriminator to solve this problem (please see the paper).
+The direction of the bangs changes suddenly near the yaw angle of pi/2. We propose to use an auxiliary discriminator to solve this problem (please see the paper).
 
 Note that in the initial stage of training, the auxiliary discriminator must dominate the generator more than the main discriminator does. Otherwise, if the main discriminator dominates the generator, the mirror symmetry problem will still occur. In practice, progressive training is able to guarantee this. We have trained many times from scratch. Adding an auxiliary discriminator stably solves the mirror symmetry problem. If you find any problems with this idea, please open an issue. 
 
