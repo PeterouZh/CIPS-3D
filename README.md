@@ -1,7 +1,7 @@
 ## CIPS-3D
 
 This repository will contain the code of the paper, </br > 
-[CIPS-3D: A 3D-Aware Generator of GANs Based on Conditionally-Independent Pixel Synthesis]().
+[CIPS-3D: A 3D-Aware Generator of GANs Based on Conditionally-Independent Pixel Synthesis](https://arxiv.org/abs/2110.09788).
 
 
 We are planning to publish the training code here in December. But if the github star reaches two hundred, I will advance the date. Stay tuned :clock10:.
@@ -49,6 +49,17 @@ Note that in the initial stage of training, the auxiliary discriminator must dom
 
 If you find our work useful in your research, please cite:
 ```
+
+@article{zhou2021CIPS3D,
+  title = {{{CIPS}}-{{3D}}: A {{3D}}-{{Aware Generator}} of {{GANs Based}} on {{Conditionally}}-{{Independent Pixel Synthesis}}},
+  shorttitle = {{{CIPS}}-{{3D}}},
+  author = {Zhou, Peng and Xie, Lingxi and Ni, Bingbing and Tian, Qi},
+  year = {2021},
+  eprint = {2110.09788},
+  eprinttype = {arxiv},
+  primaryclass = {cs, eess},
+  archiveprefix = {arXiv}
+}
 
 ```
 
