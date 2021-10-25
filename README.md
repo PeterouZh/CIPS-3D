@@ -4,7 +4,9 @@ This repository will contain the code of the paper, </br >
 [CIPS-3D: A 3D-Aware Generator of GANs Based on Conditionally-Independent Pixel Synthesis](https://arxiv.org/abs/2110.09788).
 
 
-We are planning to publish the training code here in December. But if the github star reaches two hundred, I will advance the date. Stay tuned :clock10:.
+:white_large_square: (2021-10-25) Thank you for your kind attention. The github star has reached two hundred. I will open source the training code in the near future (by the end of November at the latest). 
+
+:heavy_check_mark: (2021-10-20)  We are planning to publish the training code here in December. But if the github star reaches two hundred, I will advance the date. Stay tuned :clock10:.
 
 
 ## Demo videos
