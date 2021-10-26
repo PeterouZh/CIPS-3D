@@ -36,6 +36,20 @@ Note that in the initial stage of training, the auxiliary discriminator must dom
 
 ```bash
 
+git clone --recursive https://github.com/PeterouZh/CIPS-3D.git
+cd CIPS-3D
+
+# Create virtual environment
+conda create -y --name cips3d python=3.6.7
+conda activate cips3d
+
+pip install torch==1.8.2+cu102 torchvision==0.9.2+cu102 torchaudio==0.8.2 -f https://download.pytorch.org/whl/lts/1.8/torch_lts.html
+
+pip install --no-cache-dir tl2==0.0.3
+pip install --no-cache-dir -r requirements.txt
+
+pip install -e torch_fidelity_lib
+pip install -e pytorch_ema_lib
 
 ```
 

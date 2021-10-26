@@ -1,0 +1,6 @@
+[submodule "torch_fidelity_lib"]
+	path = torch_fidelity_lib
+	url = https://github.com/PeterouZh/torch-fidelity.git
+[submodule "pytorch_ema_lib"]
+	path = pytorch_ema_lib
+	url = https://github.com/PeterouZh/pytorch_ema.git
