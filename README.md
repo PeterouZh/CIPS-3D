@@ -58,7 +58,8 @@ pip install -e pytorch_ema_lib
 - FFHQ256 []()
 - Cartoon256 []()
 
-### Model interpolation
+
+## Model interpolation demo
 ```bash
 
 
