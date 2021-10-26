@@ -53,6 +53,17 @@ pip install -e pytorch_ema_lib
 
 ```
 
+## Pre-trained models
+
+- FFHQ256 []()
+- Cartoon256 []()
+
+### Model interpolation
+```bash
+
+
+```
+
 
 ## Training
 
