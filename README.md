@@ -3,8 +3,10 @@
 This repository will contain the code of the paper, </br > 
 [CIPS-3D: A 3D-Aware Generator of GANs Based on Conditionally-Independent Pixel Synthesis](https://arxiv.org/abs/2110.09788).
 
+:heavy_check_mark: (2021-10-27) All the code files have been released. The configuration files (yaml files) for training will be released next. Now I have provided a script and models to facilitate the experiment of network interpolation. If you find any problems, please open an issue. Have fun with it. 
+<img src=".github/web_demo.png" width="400">
 
-:white_large_square: (2021-10-25) Thank you for your kind attention. The github star has reached two hundred. I will open source the training code in the near future (by the end of November at the latest). 
+:heavy_check_mark: (2021-10-25) Thank you for your kind attention. The github star has reached two hundred. I will open source the training code in the near future. 
 
 :heavy_check_mark: (2021-10-20)  We are planning to publish the training code here in December. But if the github star reaches two hundred, I will advance the date. Stay tuned :clock10:.
 
@@ -61,7 +63,10 @@ pip install -e pytorch_ema_lib
 
 ## Model interpolation demo
 
-A web script: 
+Download the pre-trained model [G_ema_ffhq.pth](https://github.com/PeterouZh/CIPS-3D/releases/download/v0.0.1/G_ema_ffhq.pth) 
+and [G_ema_cartoon.pth](https://github.com/PeterouZh/CIPS-3D/releases/download/v0.0.1/G_ema_cartoon.pth), and put them in `datasets/pretrained`.
+
+Execute this command:
 ```bash
 streamlit run --server.port 8650 -- scripts/web_demo.py  \
   --outdir results/model_interpolation \
@@ -71,7 +76,7 @@ streamlit run --server.port 8650 -- scripts/web_demo.py  \
 ```
 Then open the browser: `http://your_ip_address:8650`.
 
-You can debug the script with this command:
+You can debug this script with this command:
 ```bash
 python scripts/web_demo.py  \
   --outdir results/model_interpolation \
@@ -81,7 +86,19 @@ python scripts/web_demo.py  \
 
 ```
 
-## Training
+## Prepare dataset
+
+```bash
+
+```
+
+## Finetune INR Net
+
+```bash
+
+```
+
+## Training from scratch
 
 ```bash
 

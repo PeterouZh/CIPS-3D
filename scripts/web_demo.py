@@ -206,7 +206,7 @@ def main(outdir,
 
   command_cfg = TLCfgNode.load_yaml_with_command(cfg_filename=cfg_file, command=command)
 
-  logger = get_logger(filename=f"{outdir}/log.txt", logger_names=['st'])
+  logger = get_logger(filename=f"{outdir}/log.txt", logger_names=['st'], stream=False)
   logger.info(f"command_cfg:\n {command_cfg.dump()}")
 
   st_model = CIPS_3D_Demo()
