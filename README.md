@@ -124,4 +124,5 @@ If you find our work useful in your research, please cite:
 - StyleGAN2 from [https://github.com/rosinality/stylegan2-pytorch](https://github.com/rosinality/stylegan2-pytorch)
 - torch-fidelity from [https://github.com/toshas/torch-fidelity](https://github.com/toshas/torch-fidelity)
 - StudioGAN from [https://github.com/POSTECH-CVLab/PyTorch-StudioGAN](https://github.com/POSTECH-CVLab/PyTorch-StudioGAN)
+- DiffAug from [https://github.com/mit-han-lab/data-efficient-gans](https://github.com/mit-han-lab/data-efficient-gans)
 
