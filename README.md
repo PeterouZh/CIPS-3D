@@ -55,12 +55,6 @@ pip install -e pytorch_ema_lib
 
 ```
 
-## Pre-trained models
-
-- FFHQ256 []()
-- Cartoon256 []()
-
-
 ## Model interpolation demo
 
 Download the pre-trained model [G_ema_ffhq.pth](https://github.com/PeterouZh/CIPS-3D/releases/download/v0.0.1/G_ema_ffhq.pth) 
