@@ -1,0 +1,79 @@
+network_pkl: &network_pkl
+  - "FFHQ_r256: datasets/pretrained/G_ema_ffhq.pth"
+
+target_network_pkl: &target_network_pkl
+  - "Cartoon_r256: datasets/pretrained/G_ema_cartoon.pth"
+
+
+G_cfg_3D2D: &G_cfg_3D2D
+  register_modules:
+  - exp.dev.nerf_inr.models.generator_nerf_inr_v16
+  name: exp.dev.nerf_inr.models.generator_nerf_inr_v16.GeneratorNerfINR
+  z_dim: 256
+  nerf_cfg:
+    in_dim: 3
+#    hidden_dim: 256
+    hidden_dim: 128
+    hidden_layers: 2
+    rgb_dim: 32
+#    style_dim: 256
+    style_dim: 128
+  mapping_nerf_cfg:
+    z_dim: 256
+#    hidden_dim: 256
+    hidden_dim: 128
+    base_layers: 4
+    head_layers: 0
+  inr_cfg:
+    input_dim: 32
+#    style_dim: 256
+#    hidden_dim: 256
+    style_dim: 512
+    hidden_dim: 512
+#    pre_rgb_dim: 32
+    pre_rgb_dim: 3
+  mapping_inr_cfg:
+    z_dim: 512
+#    hidden_dim: 256
+    hidden_dim: 512
+#    base_layers: 4
+    base_layers: 8
+    head_layers: 0
+    norm_out: true
+
+
+model_interpolation:
+  mode:
+    - model_interpolation
+  model_interpolation:
+    G_cfg: *G_cfg_3D2D
+    network_pkl: *network_pkl
+    target_network_pkl: *target_network_pkl
+    swapped_layers: [1024, 512, 256, 128, 64, 32, 16, 8, 4]
+    gamma_target: 0.4
+    metadata: "datasets/pretrained/metadata.json"
+    num_steps: 24
+    image_size: 512
+    psi: 0.95
+    trajectory_mode:
+      - circle_near_far
+      - translate_circle_near_far
+      - circle
+      - yaw
+    seeds_gallery:
+      - 72216891
+      - 88542011
+      - 92577341
+      - 86271113
+      - 92674084
+      - 578916
+      - 99738897
+      - 99860786
+      - 354348
+    fps: 40
+    num_frames: 70
+    num_samples_translate: 30
+    fov: 12
+    max_fov: 20
+    alpha_pi_div: 15
+    forward_points: 256

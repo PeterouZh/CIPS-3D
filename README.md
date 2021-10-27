@@ -43,7 +43,7 @@ cd CIPS-3D
 conda create -y --name cips3d python=3.6.7
 conda activate cips3d
 
-pip install torch==1.8.2+cu102 torchvision==0.9.2+cu102 torchaudio==0.8.2 -f https://download.pytorch.org/whl/lts/1.8/torch_lts.html
+pip install torch==1.8.2+cu102 torchvision==0.9.2+cu102 -f https://download.pytorch.org/whl/lts/1.8/torch_lts.html
 
 pip install --no-cache-dir tl2==0.0.3
 pip install --no-cache-dir -r requirements.txt
@@ -60,11 +60,26 @@ pip install -e pytorch_ema_lib
 
 
 ## Model interpolation demo
-```bash
 
+A web script: 
+```bash
+streamlit run --server.port 8650 -- scripts/web_demo.py  \
+  --outdir results/model_interpolation \
+  --cfg_file configs/web_demo.yaml \
+  --command model_interpolation
 
 ```
+Then open the browser: `http://your_ip_address:8650`.
 
+You can debug the script with this command:
+```bash
+python scripts/web_demo.py  \
+  --outdir results/model_interpolation \
+  --cfg_file configs/web_demo.yaml \
+  --command model_interpolation \
+  --debug True
+
+```
 
 ## Training
 
