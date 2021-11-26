@@ -886,8 +886,8 @@ def train(rank,
                          epoch=discriminator.epoch,
                          saved_dir=best_dir,
                          metadata=metadata)
-
-          modelarts_utils.modelarts_sync_results_dir(cfg=global_cfg, join=False)
+          if opt.modelarts:
+            modelarts_utils.modelarts_sync_results_dir(cfg=global_cfg, join=False)
         dist.barrier()
         torch.cuda.empty_cache()
 

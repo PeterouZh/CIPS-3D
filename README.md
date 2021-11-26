@@ -1,7 +1,9 @@
 ## CIPS-3D
 
-This repository will contain the code of the paper, </br > 
+This repository contains the code of the paper, </br > 
 [CIPS-3D: A 3D-Aware Generator of GANs Based on Conditionally-Independent Pixel Synthesis](https://arxiv.org/abs/2110.09788).
+
+:heavy_check_mark: (2021-11-26) The configuration files (yaml files) for training are releasing.
 
 :heavy_check_mark: (2021-10-27) All the code files have been released. The configuration files (yaml files) for training will be released next. Now I have provided a GUI script and models to facilitate the experiment of network interpolation (see below). If you find any problems, please open an issue. Have fun with it. 
 <img src=".github/web_demo.png" height="400" width="700">
@@ -81,7 +83,9 @@ python scripts/web_demo.py  \
 
 ## Prepare dataset
 
-- Download FFHQ dataset [images1024x1024](https://github.com/NVlabs/ffhq-dataset) (89.1 GB)
+### FFHQ
+
+Download FFHQ dataset [images1024x1024](https://github.com/NVlabs/ffhq-dataset) (89.1 GB)
 ```bash
 # Downsampling images in advance to speed up training
 python scripts/dataset_tool.py \
@@ -94,9 +98,28 @@ This command will create `datasets/ffhq/images256x256_image_list.txt` to be used
 
 ## Training from scratch 
 
+**Note**: 
+- In order to ensure that this code is consistent with my original dirty code, please follow me to reproduce the results using this code step by step. 
+- The training script `train_v16.py` is dirty, but I'm not going to refactor it. After all, it still works stably. 
+
 ### Start training at 64x64
 
-For debug:
+Training:
+```bash
+export CUDA_HOME=/usr/local/cuda-10.2/
+export CUDA_VISIBLE_DEVICES=0,1,2,3,4,5,6,7
+export PYTHONPATH=.
+python exp/dev/nerf_inr/scripts/train_v16.py \
+    --port 8888 \
+    --tl_config_file configs/train_ffhq.yaml \
+    --tl_command train_ffhq \
+    --tl_outdir results/train_ffhq \
+    --tl_opts curriculum.new_attrs.image_list_file datasets/ffhq/images256x256_image_list.txt \
+      D_first_layer_warmup True
+
+```
+
+Dummy training (for debug):
 ```bash
 export CUDA_HOME=/usr/local/cuda-10.2/
 export CUDA_VISIBLE_DEVICES=1
@@ -106,27 +129,20 @@ python exp/dev/nerf_inr/scripts/train_v16.py \
     --tl_command train_ffhq \
     --tl_outdir results/train_ffhq_debug \ 
     --tl_debug \
-    --modelarts True \
     --tl_opts curriculum.new_attrs.image_list_file datasets/ffhq/images256x256_image_list.txt \
       num_workers 0 num_images_real_eval 10 num_images_gen_eval 2 
 
 ```
 
-For training:
+### Resume training at 128x128 from the 64x64 models
+
+When the FID of the 64x64 model reaches about 16, we start the next step: resume training at 128x128. 
+Let's wait for the training (about 2 days or less). 
+
 ```bash
-export CUDA_HOME=/usr/local/cuda-10.2/
-export CUDA_VISIBLE_DEVICES=1,2,3,4,5,6,7
-export PYTHONPATH=.
-python exp/dev/nerf_inr/scripts/train_v16.py \
-    --port 8888 \
-    --tl_config_file configs/train_ffhq.yaml \
-    --tl_command train_ffhq \
-    --tl_outdir results/train_ffhq \
-    --modelarts True \
-    --tl_opts curriculum.new_attrs.image_list_file datasets/ffhq/images256x256_image_list.txt \
-      D_first_layer_warmup True
 
 ```
+
 
 ## Finetune INR Net
 
@@ -159,4 +175,4 @@ If you find our work useful in your research, please cite:
 - torch-fidelity from [https://github.com/toshas/torch-fidelity](https://github.com/toshas/torch-fidelity)
 - StudioGAN from [https://github.com/POSTECH-CVLab/PyTorch-StudioGAN](https://github.com/POSTECH-CVLab/PyTorch-StudioGAN)
 - DiffAug from [https://github.com/mit-han-lab/data-efficient-gans](https://github.com/mit-han-lab/data-efficient-gans)
-
+- stylegan2-ada from [https://github.com/NVlabs/stylegan2-ada-pytorch](https://github.com/NVlabs/stylegan2-ada-pytorch)
