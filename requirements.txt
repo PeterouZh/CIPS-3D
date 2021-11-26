@@ -10,3 +10,6 @@ mrcfile
 pytorch-fid
 streamlit
 tsmoothie
+tl2==0.0.6
+ninja
+

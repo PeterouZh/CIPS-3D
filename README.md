@@ -47,7 +47,6 @@ conda activate cips3d
 
 pip install torch==1.8.2+cu102 torchvision==0.9.2+cu102 -f https://download.pytorch.org/whl/lts/1.8/torch_lts.html
 
-pip install --no-cache-dir tl2==0.0.3
 pip install --no-cache-dir -r requirements.txt
 
 pip install -e torch_fidelity_lib
@@ -82,17 +81,54 @@ python scripts/web_demo.py  \
 
 ## Prepare dataset
 
+- Download FFHQ dataset [images1024x1024](https://github.com/NVlabs/ffhq-dataset) (89.1 GB)
 ```bash
+# Downsampling images in advance to speed up training
+python scripts/dataset_tool.py \
+    --source=datasets/ffhq/images1024x1024 \
+    --dest=datasets/ffhq/images256x256 \
+    --width=256 --height=256
+```
+This command will create `datasets/ffhq/images256x256_image_list.txt` to be used for the training.
+
+
+## Training from scratch 
+
+### Start training at 64x64
+
+For debug:
+```bash
+export CUDA_HOME=/usr/local/cuda-10.2/
+export CUDA_VISIBLE_DEVICES=1
+python exp/dev/nerf_inr/scripts/train_v16.py \
+    --port 8888 \ 
+    --tl_config_file configs/train_ffhq.yaml \
+    --tl_command train_ffhq \
+    --tl_outdir results/train_ffhq_debug \ 
+    --tl_debug \
+    --modelarts True \
+    --tl_opts curriculum.new_attrs.image_list_file datasets/ffhq/images256x256_image_list.txt \
+      num_workers 0 num_images_real_eval 10 num_images_gen_eval 2 
+
+```
+
+For training:
+```bash
+export CUDA_HOME=/usr/local/cuda-10.2/
+export CUDA_VISIBLE_DEVICES=1,2,3,4,5,6,7
+export PYTHONPATH=.
+python exp/dev/nerf_inr/scripts/train_v16.py \
+    --port 8888 \
+    --tl_config_file configs/train_ffhq.yaml \
+    --tl_command train_ffhq \
+    --tl_outdir results/train_ffhq \
+    --modelarts True \
+    --tl_opts curriculum.new_attrs.image_list_file datasets/ffhq/images256x256_image_list.txt \
+      D_first_layer_warmup True
 
 ```
 
 ## Finetune INR Net
-
-```bash
-
-```
-
-## Training from scratch
 
 ```bash
 
@@ -111,8 +147,6 @@ If you find our work useful in your research, please cite:
   year = {2021},
   eprint = {2110.09788},
   eprinttype = {arxiv},
-  primaryclass = {cs, eess},
-  archiveprefix = {arXiv}
 }
 
 ```

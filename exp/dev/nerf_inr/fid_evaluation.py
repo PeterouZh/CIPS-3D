@@ -18,8 +18,8 @@ from pytorch_fid import fid_score
 
 from tl2 import tl2_utils
 
-import curriculums
-# import datasets
+# import curriculums
+from exp.dev.nerf_inr import curriculums
 from exp.pigan import datasets
 
 
