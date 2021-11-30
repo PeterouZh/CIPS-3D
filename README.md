@@ -3,7 +3,7 @@
 This repository contains the code of the paper, </br > 
 [CIPS-3D: A 3D-Aware Generator of GANs Based on Conditionally-Independent Pixel Synthesis](https://arxiv.org/abs/2110.09788).
 
-:heavy_check_mark: (2021-11-26) The configuration files (yaml files) for training are releasing.
+:heavy_check_mark: (2021-11-26) The configuration files (yaml files) for training are being released.
 
 :heavy_check_mark: (2021-10-27) All the code files have been released. The configuration files (yaml files) for training will be released next. Now I have provided a GUI script and models to facilitate the experiment of network interpolation (see below). If you find any problems, please open an issue. Have fun with it. 
 <img src=".github/web_demo.png" height="400" width="700">
@@ -133,6 +133,9 @@ python exp/dev/nerf_inr/scripts/train_v16.py \
       num_workers 0 num_images_real_eval 10 num_images_gen_eval 2 
 
 ```
+
+Reproduced results:
+<img src=".github/ffhq_r64.png" height="220" width="320">
 
 ### Resume training at 128x128 from the 64x64 models
 
