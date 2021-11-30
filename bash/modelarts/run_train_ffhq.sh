@@ -53,14 +53,25 @@ export PYTHONPATH=.
 python exp/dev/nerf_inr/scripts/train_v16.py \
     --port 8888 \
     --tl_config_file configs/train_ffhq.yaml \
-    --tl_command train_ffhq \
+    --tl_command train_ffhq_r128 \
     --modelarts True \
+    --tl_resume \
+    --tl_resumedir results/train_ffhq \
     --tl_opts curriculum.new_attrs.image_list_file datasets/ffhq/ffhq_256.txt \
-      D_first_layer_warmup True \
+      D_first_layer_warmup True reset_best_fid True \
     --tl_outdir results/$resume_dir
 
 
 ## train 64x64
+#python exp/dev/nerf_inr/scripts/train_v16.py \
+#    --port 8888 \
+#    --tl_config_file configs/train_ffhq.yaml \
+#    --tl_command train_ffhq \
+#    --modelarts True \
+#    --tl_opts curriculum.new_attrs.image_list_file datasets/ffhq/ffhq_256.txt \
+#      D_first_layer_warmup True \
+#    --tl_outdir results/$resume_dir
+
 
 
 

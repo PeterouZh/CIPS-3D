@@ -134,18 +134,60 @@ python exp/dev/nerf_inr/scripts/train_v16.py \
 
 ```
 
-Reproduced results:
+When the FID of the 64x64 model reaches about 16, we start the next step: resume training at 128x128. 
+Let's wait for the training (about 2 days or less). 
+
+Reproduced results: best_FID=15.27
+
 <img src=".github/ffhq_r64.png" height="220" width="320">
+
 
 ### Resume training at 128x128 from the 64x64 models
 
-When the FID of the 64x64 model reaches about 16, we start the next step: resume training at 128x128. 
-Let's wait for the training (about 2 days or less). 
+Training:
+```bash
+export CUDA_VISIBLE_DEVICES=0,1,2,3,4,5,6,7
+export PYTHONPATH=.
+python exp/dev/nerf_inr/scripts/train_v16.py \
+    --port 8888 \
+    --tl_config_file configs/train_ffhq.yaml \
+    --tl_command train_ffhq_r128 \
+    --tl_outdir results/train_ffhq \
+    --tl_resume \
+    --tl_resumedir results/train_ffhq \
+    --tl_opts curriculum.new_attrs.image_list_file datasets/ffhq/images256x256_image_list.txt \
+      D_first_layer_warmup True reset_best_fid True
+
+```
+
+Dummy training (for debug):
+```bash
+export CUDA_HOME=/usr/local/cuda-10.2/
+export CUDA_VISIBLE_DEVICES=1
+python exp/dev/nerf_inr/scripts/train_v16.py \
+    --port 8888 \ 
+    --tl_config_file configs/train_ffhq.yaml \
+    --tl_command train_ffhq_r128 \
+    --tl_outdir results/train_ffhq \ 
+    --tl_resume \
+    --tl_resumedir results/train_ffhq \
+    --tl_debug \
+    --tl_opts curriculum.new_attrs.image_list_file datasets/ffhq/images256x256_image_list.txt \
+      num_workers 0 num_images_real_eval 10 num_images_gen_eval 2 reset_best_fid True
+
+```
+
+When the FID of the 128x128 model reaches about 16, we start the next step.
+
+Some hyperparameters may be different from the original experiment. Hope it works normally. 
+Let's wait for the training (maybe longer). 
+
+
+### Resume training at 256x256 from the 128x128 models
 
 ```bash
 
 ```
-
 
 ## Finetune INR Net
 

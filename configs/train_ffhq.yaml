@@ -87,6 +87,7 @@ train_ffhq:
   update_aux_every: 1
   warmup_itrs: 0
   mul_lr: 1.
+  reset_best_fid: false
   load_G_ema: true
   load_optimizers: true
   use_amp_D: false
@@ -117,3 +118,21 @@ train_ffhq:
   D_cfg: *D_cfg
   root_obs: *root_obs
   modelarts_download: *modelarts_download
+
+train_ffhq_r128:
+  base: train_ffhq
+  curriculum:
+    '0':
+      img_size: 128
+      gen_lr: 0.0001
+      disc_lr: 0.001
+
+
+
+
+
+
+
+
+
+

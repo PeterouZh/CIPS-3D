@@ -430,6 +430,8 @@ def train(rank,
     else:
       ema_model.update_target_dict(generator.state_dict())
 
+    if global_cfg.reset_best_fid:
+      state_dict['best_fid'] = np.inf
     logger.info(pprint.pformat(state_dict))
     discriminator.step = state_dict['step']
     generator.step = state_dict['step']
@@ -465,8 +467,10 @@ def train(rank,
 
   # After load optimizer.
   optimizer_G.param_groups[0]['initial_lr'] = metadata['gen_lr']
+  optimizer_G.param_groups[0]['lr'] = metadata['gen_lr']
   optimizer_G.param_groups[0]['betas'] = metadata['betas']
   optimizer_D.param_groups[0]['initial_lr'] = metadata['disc_lr']
+  optimizer_D.param_groups[0]['lr'] = metadata['disc_lr']
   optimizer_D.param_groups[0]['betas'] = metadata['betas']
 
   start_itr = discriminator.step
