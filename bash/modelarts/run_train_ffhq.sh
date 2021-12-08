@@ -50,6 +50,9 @@ python -m tl2.modelarts.scripts.copy_tool \
 export CUDA_VISIBLE_DEVICES=$cuda_devices
 export CUDA_HOME=/usr/local/cuda-10.2/
 export PYTHONPATH=.
+
+
+## train 128x128
 python exp/dev/nerf_inr/scripts/train_v16.py \
     --port 8888 \
     --tl_config_file configs/train_ffhq.yaml \
@@ -58,7 +61,7 @@ python exp/dev/nerf_inr/scripts/train_v16.py \
     --tl_resume \
     --tl_resumedir results/train_ffhq \
     --tl_opts curriculum.new_attrs.image_list_file datasets/ffhq/ffhq_256.txt \
-      D_first_layer_warmup True reset_best_fid True \
+      D_first_layer_warmup True reset_best_fid True update_aux_every 16 d_reg_every 8 \
     --tl_outdir results/$resume_dir
 
 
@@ -71,7 +74,7 @@ python exp/dev/nerf_inr/scripts/train_v16.py \
 #    --tl_opts curriculum.new_attrs.image_list_file datasets/ffhq/ffhq_256.txt \
 #      D_first_layer_warmup True \
 #    --tl_outdir results/$resume_dir
-
+#
 
 
 

@@ -87,7 +87,7 @@ train_ffhq:
   update_aux_every: 1
   warmup_itrs: 0
   mul_lr: 1.
-  reset_best_fid: false
+  reset_best_fid: true
   load_G_ema: true
   load_optimizers: true
   use_amp_D: false
