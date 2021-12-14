@@ -61,7 +61,7 @@ python exp/dev/nerf_inr/scripts/train_v16.py \
     --tl_resume \
     --tl_resumedir results/train_ffhq \
     --tl_opts curriculum.new_attrs.image_list_file datasets/ffhq/ffhq_256.txt \
-      D_first_layer_warmup True reset_best_fid True update_aux_every 16 d_reg_every 8 \
+      D_first_layer_warmup True reset_best_fid True update_aux_every 16 d_reg_every 1 train_aux_img False \
     --tl_outdir results/$resume_dir
 
 
