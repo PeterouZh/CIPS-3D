@@ -170,16 +170,19 @@ class Testing_ffhq_exp(unittest.TestCase):
 
     os.environ['MAX_JOBS '] = "8"
 
+    import collections
     import torch
     from tl2.proj.fvcore import build_model, TLCfgNode
     from tl2.proj.fvcore.checkpoint import Checkpointer
 
     device = 'cuda'
 
-    D = build_model(cfg.D_cfg, ).to(device)
+    D = build_model(cfg.D_cfg, kwargs_priority=True, diffaug=True).to(device)
 
-    x = torch.randn(8, 3, 64, 64, device=device)
-    out = D(x)
+    x = torch.randn(8, 3, 64, 64, device=device, requires_grad=True)
+    summary_ddict = collections.defaultdict(dict)
+
+    out = D(x, summary_ddict=summary_ddict)
 
     # Checkpointer(G).load_state_dict_from_file(cfg.network_pkl)
 

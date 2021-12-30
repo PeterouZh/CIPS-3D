@@ -1,3 +1,4 @@
+import collections
 import shutil
 import traceback
 from functools import partial
@@ -501,8 +502,10 @@ def train(rank,
   data_loader_iter = iter(data_loader)
   # batch_data = next(data_loader_iter)
 
-  for step in range(start_itr, global_cfg.total_iters):
+  summary_ddict = collections.defaultdict(dict)
 
+  for step in range(start_itr, global_cfg.total_iters):
+    summary_ddict.clear()
     metadata = curriculums.extract_metadata(curriculum, state_dict['step'])
 
     # for i, (imgs, _) in enumerate(dataloader):
@@ -560,17 +563,15 @@ def train(rank,
 
         gen_imgs = torch.cat(gen_imgs + gen_imgs_aux, axis=0)
         gen_positions = torch.cat(gen_positions + gen_positions_aux, axis=0)
-
+      # end torch.no_grad
       if aux_reg:
         real_imgs = torch.cat([real_imgs, real_imgs], dim=0)
-      if use_diffaug:
-        real_imgs = diff_aug.DiffAugment(real_imgs)
       real_imgs.requires_grad_()
       r_preds, _, _ = discriminator_ddp(real_imgs, use_aux_disc=aux_reg)
 
     d_regularize = step % global_cfg.d_reg_every == 0
 
-    if metadata['r1_lambda'] > 0 and d_regularize:
+    if global_cfg.r1_lambda > 0 and d_regularize:
       # Gradient penalty
       grad_real = torch.autograd.grad(
         outputs=scaler_D.scale(r_preds.sum()),
@@ -578,41 +579,37 @@ def train(rank,
         create_graph=True)
       inv_scale = 1. / scaler_D.get_scale()
       grad_real = [p * inv_scale for p in grad_real][0]
+
     with torch.cuda.amp.autocast(global_cfg.use_amp_D):
-      if metadata['r1_lambda'] > 0 and d_regularize:
-        grad_penalty = (grad_real.view(grad_real.size(0), -1).norm(2, dim=1) ** 2).mean()
-        grad_penalty = 0.5 * metadata['r1_lambda'] * global_cfg.d_reg_every * grad_penalty + 0 * r_preds[0]
+      if global_cfg.r1_lambda > 0 and d_regularize:
+        # grad_penalty = (grad_real.view(grad_real.size(0), -1).norm(2, dim=1) ** 2).mean()
+        # grad_penalty = 0.5 * global_cfg.r1_lambda * global_cfg.d_reg_every * grad_penalty + 0 * r_preds[0]
+        grad_penalty = grad_real.flatten(start_dim=1).square().sum(dim=1, keepdim=True)
+        grad_penalty = 0.5 * global_cfg.r1_lambda * grad_penalty * global_cfg.d_reg_every  + 0. * r_preds
       else:
         grad_penalty = dummy_tensor
 
-      g_preds, g_pred_latent, g_pred_position = discriminator_ddp(
-        gen_imgs, use_aux_disc=aux_reg, **metadata)
-      if metadata['z_lambda'] > 0 or metadata['pos_lambda'] > 0:
-        if metadata['z_lambda'] > 0:
-          latent_penalty = torch.nn.functional.mse_loss(
-            g_pred_latent, zs) * metadata['z_lambda']
-        else:
-          latent_penalty = 0
-        position_penalty = torch.nn.functional.mse_loss(
-          g_pred_position, gen_positions) * metadata['pos_lambda']
-        identity_penalty = latent_penalty + position_penalty
-      else:
-        identity_penalty = 0
+      g_preds, _, _ = discriminator_ddp(gen_imgs, use_aux_disc=aux_reg)
 
-      d_loss = torch.nn.functional.softplus(g_preds).mean() + \
-               torch.nn.functional.softplus(-r_preds).mean() + \
-               grad_penalty + \
-               identity_penalty
-      # discriminator_losses.append(d_loss.item())
+      d_loss = (torch.nn.functional.softplus(g_preds) +
+                torch.nn.functional.softplus(-r_preds) +
+                grad_penalty).mean()
+
+      if rank == 0:
+        with torch.no_grad():
+          summary_ddict['D_logits']['D_logits_real'] = r_preds.mean().item()
+          summary_ddict['D_logits']['D_logits_fake'] = g_preds.mean().item()
+          summary_ddict['grad_penalty']['grad_penalty'] = grad_penalty.mean().item()
 
     optimizer_D.zero_grad()
     scaler_D.scale(d_loss).backward()
     scaler_D.unscale_(optimizer_D)
     try:
       D_total_norm = torch.nn.utils.clip_grad_norm_(discriminator_ddp.parameters(),
-                                                    metadata['grad_clip'],
+                                                    global_cfg.grad_clip,
                                                     # error_if_nonfinite=True, # torch >= 1.9
                                                     )
+      summary_ddict['D_total_norm']['D_total_norm'] = D_total_norm.item()
     except:
       logger.info(traceback.format_exc())
       saved_models(G_ema=G_ema,
@@ -632,7 +629,7 @@ def train(rank,
     scaler_D.step(optimizer_D)
     scaler_D.update()
 
-    # TRAIN GENERATOR
+    ''' TRAIN GENERATOR '''
     if global_cfg.gen_lr > 0.:
       torch_utils.requires_grad(generator_ddp, True)
       torch_utils.requires_grad(discriminator_ddp, False)
@@ -750,7 +747,7 @@ def train(rank,
                    f"[TopK: {topk_num}] "
                    f"[scaler_G: {scaler_G.get_scale()}] "
                    f"[scaler_D: {scaler_D.get_scale()}] "
-                   f"[r1_lambda: {metadata['r1_lambda']}] "
+                   f"[r1_lambda: {global_cfg.r1_lambda}] "
                    f"[alpha({metadata['fade_steps']}): {alpha}] ")
 
       if global_cfg.tl_debug or \
@@ -767,9 +764,9 @@ def train(rank,
           'topk_num': topk_num,
           'scaler_G': scaler_G.get_scale(),
           'scaler_D': scaler_D.get_scale(),
-          'r1_lambda': metadata['r1_lambda'],
+          'r1_lambda': global_cfg.r1_lambda,
           'alpha': alpha,
-          'grad_clip': metadata['grad_clip'],
+          'grad_clip': global_cfg.grad_clip,
           'D_total_norm': D_total_norm.item(),
           'G_total_norm': G_total_norm.item(),
         }

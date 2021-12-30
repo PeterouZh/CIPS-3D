@@ -135,6 +135,11 @@ train_ffhq:
   img_size: 32
   num_workers: 8
   diffaug: false
+  r1_lambda: 10.
+  d_reg_every: 1
+  train_aux_img: true
+  update_aux_every: 1
+  grad_clip: 10
 
   log_every: 100
   log_img_every: 500
@@ -145,15 +150,14 @@ train_ffhq:
   forward_points: 256
   grad_points: 256
   main_aux_mask: [1., 1.]
-  train_aux_img: true
-  update_aux_every: 1
+
   warmup_itrs: 0
   mul_lr: 1.
   reset_best_fid: true
   load_G_ema: true
   load_optimizers: true
   D_first_layer_warmup: true
-  d_reg_every: 1
+
   use_diffaug: false
   curriculum:
     new_attrs:
@@ -165,8 +169,7 @@ train_ffhq:
     fade_steps: 10000
 
     pos_lambda: 0.
-    r1_lambda: 10.
-    grad_clip: 10
+
     '0':
       num_steps: 12
   modelarts_download: *modelarts_download

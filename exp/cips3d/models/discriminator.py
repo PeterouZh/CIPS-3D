@@ -475,10 +475,16 @@ class Discriminator_MultiScale(nn.Module):
       self.final_conv = ConvLayer(in_channel, channels[4], 3)
     self.module_name_list.append('final_conv')
 
-    self.final_linear = nn.Sequential(
-      EqualLinear(channels[4] * 4 * 4, channels[4], activation='fused_lrelu'),
-      EqualLinear(channels[4], 1))
-    self.module_name_list.append('final_linear')
+    # self.final_linear = nn.Sequential(
+    #   EqualLinear(channels[4] * 4 * 4, channels[4], activation='fused_lrelu'),
+    #   EqualLinear(channels[4], 1))
+    # self.module_name_list.append('final_linear')
+
+    self.space_linear = EqualLinear(channels[4] * 4 * 4, channels[4], activation='fused_lrelu')
+    self.module_name_list.append('space_linear')
+
+    self.out_linear = EqualLinear(channels[4], 1)
+    self.module_name_list.append('out_linear')
 
     models_dict = {}
     for name in self.module_name_list:
@@ -495,7 +501,8 @@ class Discriminator_MultiScale(nn.Module):
 
   def forward(self,
               input,
-              alpha):
+              alpha,
+              summary_ddict=None):
     # assert input.shape[-1] == self.size
     if self.diffaug:
       input = self.diff_aug_img(input)
@@ -556,10 +563,23 @@ class Discriminator_MultiScale(nn.Module):
     out = out.view(batch, -1)
 
     if global_cfg.tl_debug:
-      VerboseModel.forward_verbose(self.final_linear,
+      VerboseModel.forward_verbose(self.space_linear,
+                                   inputs_args=(out, ),
+                                   name_prefix="space_linear.")
+    out = self.space_linear(out)
+
+    if summary_ddict is not None:
+      with torch.no_grad():
+        logits_norm = out.norm(dim=1).mean().item()
+        w_norm = self.out_linear.weight.norm(dim=1).mean().item()
+        summary_ddict['logits_norm']['logits_norm'] = logits_norm
+        summary_ddict['w_norm']['w_norm'] = w_norm
+
+    if global_cfg.tl_debug:
+      VerboseModel.forward_verbose(self.out_linear,
                                    inputs_args=(out,),
-                                   name_prefix="final_linear.")
-    out = self.final_linear(out)
+                                   name_prefix="out_linear.")
+    out = self.out_linear(out)
 
     latent, position = None, None
     return out, latent, position
@@ -627,16 +647,17 @@ class Discriminator_MultiScale_Aux(nn.Module):
   def forward(self,
               input,
               use_aux_disc=False,
+              summary_ddict=None,
               **kwargs):
     alpha = 1.
     if use_aux_disc:
       b = input.shape[0] // 2
       main_input = input[:b]
       aux_input = input[b:]
-      main_out, latent, position = self.main_disc(main_input, alpha)
+      main_out, latent, position = self.main_disc(main_input, alpha, summary_ddict=summary_ddict)
       aux_out, _, _ = self.aux_disc(aux_input, alpha)
       out = torch.cat([main_out, aux_out], dim=0)
     else:
-      out, latent, position = self.main_disc(input, alpha)
+      out, latent, position = self.main_disc(input, alpha, summary_ddict=summary_ddict)
 
     return out, latent, position
