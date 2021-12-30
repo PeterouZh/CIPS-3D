@@ -60,12 +60,15 @@ G_cfg_3D2D: &G_cfg_3D2D
     add_norm: true
     norm_out: true
 
+_build_generator:
+  G_cfg: *G_cfg_3D2D
+  network_pkl: cache_pretrained/cips3d/G_ema_ffhq.pth
 
 
 D_cfg: &D_cfg
   register_modules:
-    - exp.dev.nerf_inr.models.stylegan_disc_v16
-  name: exp.dev.nerf_inr.models.stylegan_disc_v16.Discriminator_MultiScale_Aux
+    - exp.cips3d.models.discriminator
+  name: exp.cips3d.models.discriminator.Discriminator_MultiScale_Aux
   dim_z: 0
   max_size: 1024
   channel_multiplier: 2
@@ -79,12 +82,16 @@ train_ffhq:
   # train
   use_amp_G: false
   use_amp_D: false
+  gen_lr: 0.0002
+  disc_lr: 0.002
+  betas: [0, 0.999]
+  fixed_z_bs: 25
 
   num_workers: 8
   log_every: 100
   log_img_every: 500
   eval_every: 500
-  fixed_z_bs: 25
+
   num_images_real_eval: 2048
   num_images_gen_eval: 2048
   forward_points: 256
@@ -108,7 +115,7 @@ train_ffhq:
     latent_dim: 256
     topk_v: 0.
     fade_steps: 10000
-    betas: [0, 0.999]
+
     pos_lambda: 0.
     r1_lambda: 10.
     grad_clip: 10
@@ -117,8 +124,7 @@ train_ffhq:
       num_steps: 12
       img_size: 64
       batch_split: 1
-      gen_lr: 0.0002
-      disc_lr: 0.002
+
 
   root_obs: *root_obs
   modelarts_download: *modelarts_download

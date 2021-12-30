@@ -381,6 +381,41 @@ def lambda_foo(itr,
       return mul_lr
 
 
+def build_optimizer(generator_ddp,
+                    discriminator_ddp):
+
+  optimizer_G = torch.optim.Adam(
+    params=[{'params': generator_ddp.parameters(),
+             'initial_lr': global_cfg.gen_lr}],
+    lr=global_cfg.gen_lr,
+    betas=global_cfg.betas,
+    weight_decay=0)
+  optimizer_D = torch.optim.Adam(
+    params=[{'params': discriminator_ddp.parameters(),
+             'initial_lr': global_cfg.disc_lr}],
+    lr=global_cfg.disc_lr,
+    betas=global_cfg.betas,
+    weight_decay=0)
+
+  # if global_cfg.tl_resume and global_cfg.load_optimizers:
+  #   model_dict = {
+  #     'optimizer_G': optimizer_G,
+  #     'optimizer_D': optimizer_D,
+  #     'scaler_G': scaler_G,
+  #     'scaler_D': scaler_D,
+  #   }
+  #   torch_utils.load_models(save_dir=resume_dir, model_dict=model_dict, strict=False, rank=rank)
+
+  # After load optimizer.
+  # optimizer_G.param_groups[0]['initial_lr'] = global_cfg.gen_lr
+  # optimizer_G.param_groups[0]['lr'] = global_cfg.gen_lr
+  # optimizer_G.param_groups[0]['betas'] = metadata['betas']
+  # optimizer_D.param_groups[0]['initial_lr'] = global_cfg.disc_lr
+  # optimizer_D.param_groups[0]['lr'] = global_cfg.disc_lr
+  # optimizer_D.param_groups[0]['betas'] = metadata['betas']
+
+  return optimizer_G, optimizer_D
+
 def train(rank,
           world_size,
           opt):
@@ -401,19 +436,23 @@ def train(rank,
 
   scaler_G = torch.cuda.amp.GradScaler(enabled=global_cfg.use_amp_G)
   scaler_D = torch.cuda.amp.GradScaler(enabled=global_cfg.use_amp_D)
+
   state_dict = {
     'best_fid': np.inf,
+    'worst_fid': 0,
+    'step': 0,
+    'epoch': 0,
   }
 
   generator = build_model(cfg=global_cfg.G_cfg).to(device)
-
   discriminator = build_model(cfg=global_cfg.D_cfg).to(device)
-
   G_ema = copy.deepcopy(generator)
   ema_model = comm_model_utils.EMA(source=generator, target=G_ema, decay=0.999, start_itr=1000)
 
+  resume_dir = f"{global_cfg.tl_resumedir}/ckptdir/resume"
+
   if global_cfg.tl_resume:
-    resume_dir = f"{global_cfg.tl_resumedir}/ckptdir/resume"
+
     model_dict = {
       'generator': generator,
       'discriminator': discriminator,
@@ -430,63 +469,20 @@ def train(rank,
     if global_cfg.reset_best_fid:
       state_dict['best_fid'] = np.inf
     logger.info(pprint.pformat(state_dict))
-    discriminator.step = state_dict['step']
-    generator.step = state_dict['step']
-    discriminator.epoch = state_dict['epoch']
-    generator.epoch = state_dict['epoch']
 
+  # ddp
   generator_ddp = DDP(generator, device_ids=[rank], find_unused_parameters=True, broadcast_buffers=False)
   discriminator_ddp = DDP(discriminator, device_ids=[rank], find_unused_parameters=True, broadcast_buffers=False)
   generator = generator_ddp.module
   discriminator = discriminator_ddp.module
 
-  optimizer_G = torch.optim.Adam(
-      [{'params': generator_ddp.parameters(),
-        'initial_lr': metadata['gen_lr']}],
-      lr=metadata['gen_lr'],
-      betas=metadata['betas'],
-      weight_decay=metadata['weight_decay'])
-  optimizer_D = torch.optim.Adam(
-    [{'params': discriminator_ddp.parameters(),
-      'initial_lr': metadata['disc_lr']}],
-    lr=metadata['disc_lr'],
-    betas=metadata['betas'],
-    weight_decay=metadata['weight_decay'])
-
-  if global_cfg.tl_resume and global_cfg.load_optimizers:
-    model_dict = {
-      'optimizer_G': optimizer_G,
-      'optimizer_D': optimizer_D,
-      'scaler_G': scaler_G,
-      'scaler_D': scaler_D,
-    }
-    torch_utils.load_models(save_dir=resume_dir, model_dict=model_dict, strict=False, rank=rank)
-
-  # After load optimizer.
-  optimizer_G.param_groups[0]['initial_lr'] = metadata['gen_lr']
-  optimizer_G.param_groups[0]['lr'] = metadata['gen_lr']
-  optimizer_G.param_groups[0]['betas'] = metadata['betas']
-  optimizer_D.param_groups[0]['initial_lr'] = metadata['disc_lr']
-  optimizer_D.param_groups[0]['lr'] = metadata['disc_lr']
-  optimizer_D.param_groups[0]['betas'] = metadata['betas']
+  optimizer_G, optimizer_D = build_optimizer(generator_ddp=generator_ddp, discriminator_ddp=discriminator_ddp)
 
   start_itr = discriminator.step
-  lambda_lr_G = partial(lambda_foo,
-                        start_itrs=discriminator.step,
-                        warmup_itrs=global_cfg.warmup_itrs,
-                        mul_lr=global_cfg.mul_lr)
-  scheduler_G = torch.optim.lr_scheduler.LambdaLR(
-    optimizer_G, lr_lambda=lambda_lr_G, last_epoch=discriminator.step)
-  lambda_lr_D = partial(lambda_foo,
-                        start_itrs=discriminator.step,
-                        warmup_itrs=global_cfg.warmup_itrs,
-                        mul_lr=global_cfg.mul_lr)
-  scheduler_D = torch.optim.lr_scheduler.LambdaLR(
-    optimizer_D, lr_lambda=lambda_lr_D, last_epoch=discriminator.step)
 
   generator.set_device(device)
 
-  fixed_z = generator.get_zs(global_cfg.get('fixed_z_bs', 25))
+  fixed_z = generator.get_zs(global_cfg.fixed_z_bs)
   use_diffaug = global_cfg.get('use_diffaug', False)
   # ----------
   #  Training
@@ -494,16 +490,6 @@ def train(rank,
 
   dummy_tensor = torch.tensor([0], device=device)
 
-  with open(os.path.join(opt.output_dir, 'options.txt'), 'w') as f:
-    f.write(str(opt))
-    f.write('\n\n')
-    f.write(str(generator))
-    f.write('\n\n')
-    f.write(str(discriminator))
-    f.write('\n\n')
-    f.write(str(curriculum))
-
-  torch.manual_seed(rank)
   dataloader = None
   total_progress_bar = tqdm(total=opt.n_epochs, desc="Epoch", dynamic_ncols=True)
   total_progress_bar.update(discriminator.epoch)
@@ -527,9 +513,6 @@ def train(rank,
 
     for i, (imgs, _) in enumerate(dataloader):
       metadata = curriculums.extract_metadata(curriculum, discriminator.step)
-
-      scheduler_G.step()
-      scheduler_D.step()
 
       if dataloader.batch_size != metadata['batch_size']: break
 
@@ -659,7 +642,7 @@ def train(rank,
       scaler_D.update()
 
       # TRAIN GENERATOR
-      if metadata['gen_lr'] > 0.:
+      if global_cfg.gen_lr > 0.:
         torch_utils.requires_grad(generator_ddp, True)
         torch_utils.requires_grad(discriminator_ddp, False)
 

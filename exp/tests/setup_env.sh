@@ -15,6 +15,7 @@ for filename in /cache/pypi/*.whl; do
 done
 
 pip install --no-cache-dir -r requirements.txt
+pip install --no-cache-dir ninja
 pip install -e torch_fidelity_lib
 
 pip uninstall -y tl2
