@@ -415,6 +415,7 @@ class Discriminator_MultiScale(nn.Module):
                input_size=3,
                first_downsample=False,
                channels=None,
+               stddev_group=4,
                **kwargs):
     super().__init__()
 
@@ -423,6 +424,7 @@ class Discriminator_MultiScale(nn.Module):
       'max_size': max_size,
       'channel_multiplier': channel_multiplier,
       'first_downsample': first_downsample,
+      'stddev_group': stddev_group,
     })
 
     self.epoch = 0
@@ -431,6 +433,7 @@ class Discriminator_MultiScale(nn.Module):
     self.diffaug = diffaug
     self.max_size = max_size
     self.input_size = input_size
+    self.stddev_group = stddev_group
 
     self.module_name_list = []
 
@@ -464,10 +467,12 @@ class Discriminator_MultiScale(nn.Module):
       self.convs[f"{2 ** i}"] = ResBlock(in_channel, out_channel, blur_kernel, first_downsample=first_downsample)
       in_channel = out_channel
 
-    self.stddev_group = 4
     self.stddev_feat = 1
 
-    self.final_conv = ConvLayer(in_channel + 1, channels[4], 3)
+    if self.stddev_group > 1:
+      self.final_conv = ConvLayer(in_channel + 1, channels[4], 3)
+    else:
+      self.final_conv = ConvLayer(in_channel, channels[4], 3)
     self.module_name_list.append('final_conv')
 
     self.final_linear = nn.Sequential(
@@ -490,8 +495,7 @@ class Discriminator_MultiScale(nn.Module):
 
   def forward(self,
               input,
-              alpha,
-              **kwargs):
+              alpha):
     # assert input.shape[-1] == self.size
     if self.diffaug:
       input = self.diff_aug_img(input)
@@ -530,17 +534,19 @@ class Discriminator_MultiScale(nn.Module):
       out = self.convs[f"{2 ** i}"](out)
 
     batch, channel, height, width = out.shape
-    group = min(batch, self.stddev_group)
-    # (4, 1, 1, 512//1, 4, 4)
-    stddev = out.view(group, -1, self.stddev_feat, channel // self.stddev_feat, height, width)
-    # (1, 1, 512//1, 4, 4)
-    stddev = torch.sqrt(stddev.var(0, unbiased=False) + 1e-8)
-    # (1, 1, 1, 1)
-    stddev = stddev.mean([2, 3, 4], keepdims=True).squeeze(2)
-    # (4, 1, 4, 4)
-    stddev = stddev.repeat(group, 1, height, width)
-    # (4, 513, 4, 4)
-    out = torch.cat([out, stddev], 1)
+
+    if self.stddev_group > 0:
+      group = min(batch, self.stddev_group)
+      # (4, 2, 1, 512//1, 4, 4)
+      stddev = out.view(group, -1, self.stddev_feat, channel // self.stddev_feat, height, width)
+      # (2, 1, 512//1, 4, 4)
+      stddev = torch.sqrt(stddev.var(0, unbiased=False) + 1e-8)
+      # (2, 1, 1, 1)
+      stddev = stddev.mean([2, 3, 4], keepdims=True).squeeze(2)
+      # (8, 1, 4, 4)
+      stddev = stddev.repeat(group, 1, height, width)
+      # (8, 513, 4, 4)
+      out = torch.cat([out, stddev], 1)
 
     if global_cfg.tl_debug:
       VerboseModel.forward_verbose(self.final_conv,
@@ -570,6 +576,7 @@ class Discriminator_MultiScale_Aux(nn.Module):
                max_size,
                channel_multiplier=2,
                first_downsample=False,
+               stddev_group=0,
                **kwargs):
     super().__init__()
 
@@ -578,6 +585,7 @@ class Discriminator_MultiScale_Aux(nn.Module):
       'max_size': max_size,
       'channel_multiplier': channel_multiplier,
       'first_downsample': first_downsample,
+      'stddev_group': stddev_group,
     })
 
     self.epoch = 0
@@ -586,7 +594,8 @@ class Discriminator_MultiScale_Aux(nn.Module):
     self.main_disc = Discriminator_MultiScale(diffaug=diffaug,
                                               max_size=max_size,
                                               channel_multiplier=channel_multiplier,
-                                              first_downsample=first_downsample)
+                                              first_downsample=first_downsample,
+                                              stddev_group=stddev_group)
 
     channel_multiplier = 2
     channels = {
@@ -604,7 +613,8 @@ class Discriminator_MultiScale_Aux(nn.Module):
                                              max_size=max_size,
                                              channel_multiplier=channel_multiplier,
                                              first_downsample=True,
-                                             channels=channels)
+                                             channels=channels,
+                                             stddev_group=stddev_group)
     logger = logging.getLogger('tl')
     torch_utils.print_number_params(models_dict={
       "main_disc": self.main_disc,
@@ -616,18 +626,17 @@ class Discriminator_MultiScale_Aux(nn.Module):
 
   def forward(self,
               input,
-              alpha,
               use_aux_disc=False,
               **kwargs):
-
+    alpha = 1.
     if use_aux_disc:
       b = input.shape[0] // 2
       main_input = input[:b]
       aux_input = input[b:]
-      main_out, latent, position = self.main_disc(main_input, alpha, **kwargs)
-      aux_out, _, _ = self.aux_disc(aux_input, alpha, **kwargs)
+      main_out, latent, position = self.main_disc(main_input, alpha)
+      aux_out, _, _ = self.aux_disc(aux_input, alpha)
       out = torch.cat([main_out, aux_out], dim=0)
     else:
-      out, latent, position = self.main_disc(input, alpha, **kwargs)
+      out, latent, position = self.main_disc(input, alpha)
 
     return out, latent, position

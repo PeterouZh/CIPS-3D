@@ -566,7 +566,7 @@ def train(rank,
       if use_diffaug:
         real_imgs = diff_aug.DiffAugment(real_imgs)
       real_imgs.requires_grad_()
-      r_preds, _, _ = discriminator_ddp(real_imgs, 1, use_aux_disc=aux_reg, **metadata)
+      r_preds, _, _ = discriminator_ddp(real_imgs, use_aux_disc=aux_reg)
 
     d_regularize = step % global_cfg.d_reg_every == 0
 
@@ -586,7 +586,7 @@ def train(rank,
         grad_penalty = dummy_tensor
 
       g_preds, g_pred_latent, g_pred_position = discriminator_ddp(
-        gen_imgs, 1, use_aux_disc=aux_reg, **metadata)
+        gen_imgs, use_aux_disc=aux_reg, **metadata)
       if metadata['z_lambda'] > 0 or metadata['pos_lambda'] > 0:
         if metadata['z_lambda'] > 0:
           latent_penalty = torch.nn.functional.mse_loss(
@@ -661,7 +661,7 @@ def train(rank,
             gen_imgs = diff_aug.DiffAugment(gen_imgs)
           with torch.cuda.amp.autocast(global_cfg.use_amp_D):
             g_preds, g_pred_latent, g_pred_position = discriminator_ddp(
-              gen_imgs.to(torch.float32), alpha, use_aux_disc=aux_reg, **metadata)
+              gen_imgs.to(torch.float32), use_aux_disc=aux_reg, **metadata)
 
           if g_preds.shape[0] == imgs.shape[0] * 2:
             aux_mask = torch.tensor(global_cfg.main_aux_mask, device=g_preds.device)

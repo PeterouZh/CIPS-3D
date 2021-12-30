@@ -77,10 +77,15 @@ D_cfg: &D_cfg
   register_modules:
     - exp.cips3d.models.discriminator
   name: exp.cips3d.models.discriminator.Discriminator_MultiScale_Aux
-  dim_z: 0
+  diffaug: false
   max_size: 1024
   channel_multiplier: 2
   first_downsample: false
+  stddev_group: 0
+
+_build_discriminator:
+  D_cfg: *D_cfg
+#  network_pkl: cache_pretrained/cips3d/G_ema_ffhq.pth
 
 
 dataset_ffhq_r256: &dataset_ffhq_r256
@@ -127,7 +132,7 @@ train_ffhq:
   total_iters: 200000
   batch_size: 4
   batch_split: 2
-  img_size: 64
+  img_size: 32
   num_workers: 8
   diffaug: false
 
