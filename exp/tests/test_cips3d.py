@@ -139,7 +139,7 @@ class Testing_ffhq_exp(unittest.TestCase):
     :return:
     """
     if 'CUDA_VISIBLE_DEVICES' not in os.environ:
-      os.environ['CUDA_VISIBLE_DEVICES'] = '0'
+      os.environ['CUDA_VISIBLE_DEVICES'] = '1'
     if 'TIME_STR' not in os.environ:
       os.environ['TIME_STR'] = '0'
     if 'RUN_NUM' not in os.environ:
@@ -182,6 +182,7 @@ class Testing_ffhq_exp(unittest.TestCase):
     os.environ['DNNLIB_CACHE_DIR'] = "cache_dnnlib"
     os.environ['TORCH_EXTENSIONS_DIR'] = "cache_torch_extensions"
     os.environ['PATH'] = f"{os.path.dirname(sys.executable)}:{os.environ['PATH']}"
+    os.environ['MAX_JOBS '] = "8"
 
     cmd_str = f"""
         python 
@@ -193,11 +194,12 @@ class Testing_ffhq_exp(unittest.TestCase):
     if debug:
       cmd_str += f"""
                   --tl_debug
-                  --tl_opts 
+                  --tl_opts num_workers 0
                   """
     else:
       cmd_str += f"""
-                  --tl_opts {tl_opts}
+                  --tl_opts num_workers {n_gpus} 
+                    {tl_opts}
                   """
     start_cmd_run(cmd_str)
     # from tl2.launch.launch_utils import update_parser_defaults_from_yaml, global_cfg

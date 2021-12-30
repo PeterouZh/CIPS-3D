@@ -14,6 +14,7 @@ from tl2.proj.pytorch.pytorch_hook import VerboseModel
 from tl2 import tl2_utils
 
 from exp.comm.op import FusedLeakyReLU, fused_leaky_relu, upfirdn2d
+from .diffaug import DiffAugment
 
 
 class EqualConv2d(nn.Module):
@@ -407,6 +408,7 @@ class Discriminator_MultiScale(nn.Module):
     return tl2_utils.get_class_repr(self)
 
   def __init__(self,
+               diffaug,
                max_size,
                channel_multiplier=2,
                blur_kernel=[1, 3, 3, 1],
@@ -417,6 +419,7 @@ class Discriminator_MultiScale(nn.Module):
     super().__init__()
 
     self.repr_str = tl2_utils.dict2string(dict_obj={
+      'diffaug': diffaug,
       'max_size': max_size,
       'channel_multiplier': channel_multiplier,
       'first_downsample': first_downsample,
@@ -425,6 +428,7 @@ class Discriminator_MultiScale(nn.Module):
     self.epoch = 0
     self.step = 0
 
+    self.diffaug = diffaug
     self.max_size = max_size
     self.input_size = input_size
 
@@ -480,11 +484,18 @@ class Discriminator_MultiScale(nn.Module):
     logger.info(self)
     pass
 
+  def diff_aug_img(self, img):
+    img = DiffAugment(img, policy='color,translation,cutout')
+    return img
+
   def forward(self,
               input,
               alpha,
               **kwargs):
     # assert input.shape[-1] == self.size
+    if self.diffaug:
+      input = self.diff_aug_img(input)
+
     size = input.shape[-1]
     log_size = int(math.log(size, 2))
 
@@ -555,6 +566,7 @@ class Discriminator_MultiScale_Aux(nn.Module):
     return tl2_utils.get_class_repr(self)
 
   def __init__(self,
+               diffaug,
                max_size,
                channel_multiplier=2,
                first_downsample=False,
@@ -562,6 +574,7 @@ class Discriminator_MultiScale_Aux(nn.Module):
     super().__init__()
 
     self.repr_str = tl2_utils.dict2string(dict_obj={
+      'diffaug': diffaug,
       'max_size': max_size,
       'channel_multiplier': channel_multiplier,
       'first_downsample': first_downsample,
@@ -570,7 +583,8 @@ class Discriminator_MultiScale_Aux(nn.Module):
     self.epoch = 0
     self.step = 0
 
-    self.main_disc = Discriminator_MultiScale(max_size=max_size,
+    self.main_disc = Discriminator_MultiScale(diffaug=diffaug,
+                                              max_size=max_size,
                                               channel_multiplier=channel_multiplier,
                                               first_downsample=first_downsample)
 
@@ -586,7 +600,8 @@ class Discriminator_MultiScale_Aux(nn.Module):
       512: 32 * channel_multiplier,
       1024: 16 * channel_multiplier,
     }
-    self.aux_disc = Discriminator_MultiScale(max_size=max_size,
+    self.aux_disc = Discriminator_MultiScale(diffaug=diffaug,
+                                             max_size=max_size,
                                              channel_multiplier=channel_multiplier,
                                              first_downsample=True,
                                              channels=channels)

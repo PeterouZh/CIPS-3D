@@ -1262,9 +1262,9 @@ class GeneratorNerfINR(GeneratorNerfINR_base):
               num_steps,
               h_stddev,
               v_stddev,
-              h_mean,
-              v_mean,
               hierarchical_sample,
+              h_mean=math.pi*0.5,
+              v_mean=math.pi*0.5,
               psi=1,
               sample_dist=None,
               lock_view_dependence=False,
@@ -1770,14 +1770,27 @@ class GeneratorNerfINR(GeneratorNerfINR_base):
       z = torch.rand(shape, device=device) * 2 - 1
     return z
 
-  def get_zs(self, b):
+  def get_zs(self, b, batch_split=1):
     z_nerf = self.z_sampler(shape=(b, self.mapping_network_nerf.z_dim), device=self.device)
     z_inr = self.z_sampler(shape=(b, self.mapping_network_inr.z_dim), device=self.device)
-    zs = {
-      'z_nerf': z_nerf,
-      'z_inr': z_inr,
-    }
-    return zs
+
+    if batch_split > 1:
+      zs_list = []
+      z_nerf_list = z_nerf.split(b // batch_split)
+      z_inr_list = z_inr.split(b // batch_split)
+      for z_nerf_, z_inr_ in zip(z_nerf_list, z_inr_list):
+        zs_ = {
+          'z_nerf': z_nerf_,
+          'z_inr': z_inr_,
+        }
+        zs_list.append(zs_)
+      return zs_list
+    else:
+      zs = {
+        'z_nerf': z_nerf,
+        'z_inr': z_inr,
+      }
+      return zs
 
   def mapping_network(self,
                       z_nerf,
