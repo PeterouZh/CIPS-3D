@@ -27,6 +27,13 @@ obs_ffhq_r256: &obs_ffhq_r256
   overwrite: false
   unzip: false
 
+obs_inception_v3: &obs_inception_v3
+  datapath_obs: 'keras/cache/torch/hub/checkpoints/weights-inception-2015-12-05-6726825d.pth'
+  datapath: "~/.cache/torch/hub/checkpoints/weights-inception-2015-12-05-6726825d.pth"
+  disable: false
+  overwrite: false
+  unzip: false
+
 
 G_cfg_3D2D: &G_cfg_3D2D
   register_modules:
@@ -114,6 +121,14 @@ G_kwargs: &G_kwargs
   sample_dist: 'gaussian'
 
 
+_setup_evaluation:
+  base: train_ffhq
+
+_gen_images:
+  base: train_ffhq
+  network_pkl: cache_pretrained/cips3d/G_ema_ffhq.pth
+
+
 train_ffhq:
   seed: 1234
   G_cfg: *G_cfg_3D2D
@@ -121,6 +136,7 @@ train_ffhq:
   data_cfg: *dataset_ffhq_r256
   root_obs: *root_obs
   obs_training_dataset: *obs_ffhq_r256
+  obs_inception_v3: *obs_inception_v3
   G_kwargs: *G_kwargs
   # train
   use_amp_G: false
@@ -131,7 +147,7 @@ train_ffhq:
   fixed_z_bs: 25
   total_iters: 200000
   batch_size: 4
-  batch_split: 2
+  batch_split: 1
   img_size: 32
   num_workers: 8
   diffaug: false
@@ -139,14 +155,15 @@ train_ffhq:
   d_reg_every: 1
   train_aux_img: true
   update_aux_every: 1
-  grad_clip: 10
-
-  log_every: 100
-  log_img_every: 500
+  grad_clip: 50
+  log_every: 10
   eval_every: 500
-
+  # eval
+  del_fid_real_images: true
   num_images_real_eval: 2048
   num_images_gen_eval: 2048
+  eval_batch_size: 16
+
   forward_points: 256
   grad_points: 256
   main_aux_mask: [1., 1.]
@@ -165,7 +182,7 @@ train_ffhq:
       image_list_file: "datasets/ffhq/images256x256_image_list.txt"
     dataset: FFHQ
     latent_dim: 256
-    topk_v: 0.
+
     fade_steps: 10000
 
     pos_lambda: 0.
@@ -173,6 +190,16 @@ train_ffhq:
     '0':
       num_steps: 12
   modelarts_download: *modelarts_download
+
+eval_fid:
+  base: train_ffhq
+  network_pkl_obs: "keras/CIPS-3D/cache_pretrained/cips3d/G_ema_ffhq.pth"
+  network_pkl: "cache_pretrained/cips3d/G_ema_ffhq.pth"
+  img_size: 256
+  num_images_real_eval: 50000
+  num_images_gen_eval: 50000
+  kid: false
+
 
 train_ffhq_r128:
   base: train_ffhq
