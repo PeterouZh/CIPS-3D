@@ -24,7 +24,7 @@ from torchvision.utils import save_image, make_grid
 from tl2.launch.launch_utils import update_parser_defaults_from_yaml, global_cfg
 from tl2.modelarts import modelarts_utils, moxing_utils
 from tl2.proj.fvcore import build_model
-from tl2.proj.logger.textlogger import summary_defaultdict2txtfig, global_textlogger
+from tl2.proj.logger.textlogger import summary_dict2txtfig, summary_defaultdict2txtfig, global_textlogger
 from tl2 import tl2_utils
 from tl2.proj.pytorch import torch_utils
 from tl2.proj.argparser import argparser_utils
@@ -34,10 +34,9 @@ from tl2.proj.pytorch.ddp import ddp_utils
 from exp.dev.nerf_inr import curriculums
 from exp.pigan import datasets
 from exp.comm import comm_model_utils
-# from exp.cips3d.models import fid_evaluation
 from exp.cips3d.scripts.setup_evaluation import setup_evaluation
 from exp.cips3d.scripts.gen_images import gen_images
-
+from exp.cips3d.scripts.eval_fid import eval_fid
 
 def setup_ddp(rank, world_size, port):
   os.environ['MASTER_ADDR'] = 'localhost'
@@ -54,249 +53,100 @@ def cleanup():
   dist.destroy_process_group()
 
 
-def load_images(images, curriculum, device):
-  return_images = []
-  head = 0
-  for stage in curriculum['stages']:
-    stage_images = images[head:head + stage['batch_size']]
-    stage_images = F.interpolate(stage_images, size=stage['img_size'], mode='bilinear', align_corners=True)
-    return_images.append(stage_images)
-    head += stage['batch_size']
-  return return_images
-
-
-def z_sampler(shape, device, dist):
-  if dist == 'gaussian':
-    z = torch.randn(shape, device=device)
-  elif dist == 'uniform':
-    z = torch.rand(shape, device=device) * 2 - 1
-  return z
-
-
-def saved_models(G_ema,
-                 generator_ddp,
-                 discriminator_ddp,
-                 optimizer_G,
-                 optimizer_D,
-                 scaler_G,
-                 scaler_D,
-                 state_dict,
-                 step,
-                 epoch,
-                 saved_dir=None,
-                 metadata=None,
-                 ):
+def saved_models(model_dict,
+                 info_msg,
+                 G,
+                 G_ema,
+                 G_kwargs,
+                 fixed_z,
+                 img_size,
+                 saved_dir=None):
   if saved_dir is None:
-    ckpt_max2keep = tl2_utils.MaxToKeep.get_named_max_to_keep(
-      name='ckpt', max_to_keep=4, use_circle_number=True)
-    saved_dir = ckpt_max2keep.step_and_ret_circle_dir(
-      global_cfg.tl_ckptdir, info_msg=step)
+    ckpt_max2keep = tl2_utils.MaxToKeep.get_named_max_to_keep(name='ckpt', use_circle_number=True)
+    saved_dir = ckpt_max2keep.step_and_ret_circle_dir(global_cfg.tl_ckptdir)
   os.makedirs(saved_dir, exist_ok=True)
 
-  if metadata is not None:
-    tl2_utils.json_dump(metadata, f"{saved_dir}/metadata.json")
-  global_cfg.dump_to_file_with_command(
-    f"{saved_dir}/config_command.yaml", global_cfg.tl_command)
+  global_cfg.dump_to_file_with_command(f"{saved_dir}/config_command.yaml", global_cfg.tl_command)
 
-  # G_ema = copy.deepcopy(generator_ddp.module)
-  # ema.copy_to(G_ema.parameters())
+  torch_utils.save_models(save_dir=saved_dir, model_dict=model_dict)
+  tl2_utils.write_info_msg(saved_dir, info_msg)
 
-  state_dict['epoch'] = epoch
-  state_dict['step'] = step
-  model_dict = {
-    # 'ema': ema,
-    # 'ema2': ema2,
-    'generator': generator_ddp.module,
-    'G_ema': G_ema,
-    'discriminator': discriminator_ddp.module,
-    'optimizer_G': optimizer_G,
-    'optimizer_D': optimizer_D,
-    'scaler_G': scaler_G,
-    'scaler_D': scaler_D,
-    'state_dict': state_dict,
-  }
+  save_images(saved_dir=saved_dir,
+              G=G,
+              G_ema=G_ema,
+              G_kwargs=G_kwargs,
+              fixed_z=fixed_z,
+              img_size=img_size)
 
-  torch_utils.save_models(save_dir=saved_dir,
-                          model_dict=model_dict,
-                          info_msg=f"epoch: {epoch}\n"
-                                   f"step: {step}")
-
-  # del G_ema
   torch.cuda.empty_cache()
-  # torch.save(ema, os.path.join(saved_dir, 'ema.pth'))
-  # torch.save(ema2, os.path.join(saved_dir, 'ema2.pth'))
-  # torch.save(generator_ddp.module, os.path.join(saved_dir, 'generator.pth'))
-  # torch.save(discriminator_ddp.module, os.path.join(saved_dir, 'discriminator.pth'))
-  # torch.save(optimizer_G.state_dict(), os.path.join(saved_dir, 'optimizer_G.pth'))
-  # torch.save(optimizer_D.state_dict(), os.path.join(saved_dir, 'optimizer_D.pth'))
-  # torch.save(scaler.state_dict(), os.path.join(saved_dir, 'scaler.pth'))
-  # torch.save(generator_losses, os.path.join(saved_dir, 'generator.losses'))
-  # torch.save(discriminator_losses, os.path.join(saved_dir, 'discriminator.losses'))
-  # torch.save(state_dict, f"{saved_dir}/state_dict.pth")
 
   pass
 
 
-def save_images_horizontal_flip(saved_imgdir,
-                                metadata,
-                                G_ema,
-                                fixed_z,
-                                device,
-                                step):
-  # fixed_z = fixed_z[:20]
-  sub_fixed_z = {}
-  for name, z_ in fixed_z.items():
-    sub_fixed_z[name] = z_[:20]
-  fixed_z = sub_fixed_z
-
-  with torch.no_grad():
-    with torch.cuda.amp.autocast(global_cfg.use_amp_G):
-      copied_metadata = copy.deepcopy(metadata)
-      copied_metadata['num_steps'] = max(12, copied_metadata['num_steps'])
-      copied_metadata['h_stddev'] = copied_metadata['v_stddev'] = 0
-      copied_metadata['h_mean'] = 1.44
-      # copied_metadata['img_size'] = 128
-      if copied_metadata['img_size'] > 128:
-        # fixed_z = fixed_z[0:10]
-        sub_fixed_z = {}
-        for name, z_ in fixed_z.items():
-          sub_fixed_z[name] = z_[:10]
-        fixed_z = sub_fixed_z
-      gen_imgs1 = G_ema(fixed_z,
-                        return_aux_img=True,
-                        forward_points=128 ** 2,
-                        **copied_metadata)[0]
-
-      copied_metadata = copy.deepcopy(metadata)
-      copied_metadata['num_steps'] = max(12, copied_metadata['num_steps'])
-      copied_metadata['h_stddev'] = copied_metadata['v_stddev'] = 0
-      copied_metadata['h_mean'] = 1.70
-      # copied_metadata['img_size'] = 128
-      gen_imgs2 = G_ema(fixed_z,
-                        return_aux_img=True,
-                        forward_points=128 ** 2,
-                        **copied_metadata)[0]
-
-  gen_imgs = torch.cat([gen_imgs1, gen_imgs2])
-  save_image(gen_imgs,
-             os.path.join(saved_imgdir, f"gen_flip_ema.jpg"),
-             nrow=len(list(fixed_z.values())[0]) // 2,
-             normalize=True)
-  pass
-
-
-def save_images(generator_ddp,
+@torch.no_grad()
+def save_images(saved_dir,
+                G,
                 G_ema,
-                discriminator,
-                metadata,
+                G_kwargs,
                 fixed_z,
-                device,
+                img_size,
+                use_amp_G=False,
                 ):
-  generator_ddp.eval()
-  fixed_z_ori = fixed_z
-  bs = len(list(fixed_z.values())[0])
-
-  img_max2keep = tl2_utils.MaxToKeep.get_named_max_to_keep('img')
-  saved_imgdir = img_max2keep.step_and_ret_circle_dir(root_dir=global_cfg.tl_imgdir,
-                                                      info_msg=discriminator.step)
-  with torch.no_grad():
-    with torch.cuda.amp.autocast(global_cfg.use_amp_G):
-      copied_metadata = copy.deepcopy(metadata)
-      copied_metadata['num_steps'] = max(12, copied_metadata['num_steps'])
-      copied_metadata['h_stddev'] = copied_metadata['v_stddev'] = 0
-      # copied_metadata['img_size'] = max(128, copied_metadata['img_size'])
-      if copied_metadata['img_size'] > 128:
-        # fixed_z = fixed_z[0:9]
-        sub_fixed_z = {}
-        for name, z_ in fixed_z_ori.items():
-          sub_fixed_z[name] = z_[0:9]
-        fixed_z = sub_fixed_z
-        bs = 9
-      gen_imgs = generator_ddp.module(fixed_z,
-                                      return_aux_img=True,
-                                      forward_points=128 ** 2,
-                                      **copied_metadata)[0]
-  save_image(gen_imgs,
-             os.path.join(saved_imgdir, f"gen_fixed.jpg"),
-             nrow=int(math.sqrt(bs)),
-             normalize=True)
-
-  with torch.no_grad():
-    with torch.cuda.amp.autocast(global_cfg.use_amp_G):
-      copied_metadata = copy.deepcopy(metadata)
-      copied_metadata['num_steps'] = max(12, copied_metadata['num_steps'])
-      copied_metadata['h_stddev'] = copied_metadata['v_stddev'] = 0
-      copied_metadata['h_mean'] += 0.5
-      # copied_metadata['img_size'] = max(128, copied_metadata['img_size'])
-      gen_imgs = generator_ddp.module(fixed_z,
-                                      return_aux_img=True,
-                                      forward_points=128 ** 2,
-                                      **copied_metadata)[0]
-  save_image(gen_imgs,
-             os.path.join(saved_imgdir, f"gen_tilted.jpg"),
-             nrow=int(math.sqrt(bs)),
-             normalize=True)
-
-  # ema.store(generator_ddp.parameters())
-  # ema.copy_to(generator_ddp.parameters())
-  # generator_ddp.eval()
+  G.eval()
   G_ema.eval()
 
-  with torch.no_grad():
-    with torch.cuda.amp.autocast(global_cfg.use_amp_G):
-      copied_metadata = copy.deepcopy(metadata)
-      copied_metadata['num_steps'] = max(12, copied_metadata['num_steps'])
-      copied_metadata['h_stddev'] = copied_metadata['v_stddev'] = 0
-      # copied_metadata['img_size'] = max(128, copied_metadata['img_size'])
-      gen_imgs = G_ema(fixed_z,
-                       return_aux_img=True,
-                       forward_points=128 ** 2,
-                       **copied_metadata)[0]
-  save_image(gen_imgs,
-             os.path.join(saved_imgdir, f"gen_fixed_ema.jpg"),
-             nrow=int(math.sqrt(bs)),
-             normalize=True)
+  bs = len(list(fixed_z.values())[0])
+  G_kwargs = copy.deepcopy(G_kwargs)
+  G_kwargs['img_size'] = img_size
 
-  with torch.no_grad():
-    with torch.cuda.amp.autocast(global_cfg.use_amp_G):
-      copied_metadata = copy.deepcopy(metadata)
-      copied_metadata['num_steps'] = max(12, copied_metadata['num_steps'])
-      copied_metadata['h_stddev'] = copied_metadata['v_stddev'] = 0
-      copied_metadata['h_mean'] += 0.5
-      # copied_metadata['img_size'] = max(128, copied_metadata['img_size'])
-      gen_imgs = G_ema(fixed_z,
-                       return_aux_img=True,
-                       forward_points=128 ** 2,
-                       **copied_metadata)[0]
-  save_image(gen_imgs,
-             os.path.join(saved_imgdir, f"gen_tilted_ema.jpg"),
-             nrow=int(math.sqrt(bs)),
-             normalize=True)
+  with torch.cuda.amp.autocast(use_amp_G):
+    copied_metadata = copy.deepcopy(G_kwargs)
+    copied_metadata['h_stddev'] = 0
+    copied_metadata['v_stddev'] = 0
+    Gz = G(fixed_z, return_aux_img=True, forward_points=256 ** 2, **copied_metadata)[0]
+    save_image(Gz, f"{saved_dir}/0Gz.jpg", nrow=int(math.sqrt(bs)), normalize=True, scale_each=True)
 
-  save_images_horizontal_flip(saved_imgdir=saved_imgdir,
-                              metadata=metadata,
-                              G_ema=G_ema,
-                              fixed_z=fixed_z_ori,
-                              device=device,
-                              step=discriminator.step)
+    Gema_z = G_ema(fixed_z, return_aux_img=True, forward_points=256 ** 2, **copied_metadata)[0]
+    save_image(Gema_z, f"{saved_dir}/0Gz_ema.jpg", nrow=int(math.sqrt(bs)), normalize=True, scale_each=True)
 
-  with torch.no_grad():
-    with torch.cuda.amp.autocast(global_cfg.use_amp_G):
-      copied_metadata = copy.deepcopy(metadata)
-      copied_metadata['num_steps'] = max(12, copied_metadata['num_steps'])
-      copied_metadata['h_stddev'] = copied_metadata['v_stddev'] = 0
-      # copied_metadata['img_size'] = max(128, copied_metadata['img_size'])
-      copied_metadata['psi'] = 0.7
-      gen_imgs = G_ema(fixed_z,
-                       return_aux_img=True,
-                       forward_points=128 ** 2,
-                       **copied_metadata)[0]
-  save_image(gen_imgs,
-             os.path.join(saved_imgdir, f"gen_random.jpg"),
-             nrow=int(math.sqrt(bs)),
-             normalize=True)
+    copied_metadata['psi'] = 0.7
+    Gema_trunc = G_ema(fixed_z, return_aux_img=True, forward_points=256 ** 2, **copied_metadata)[0]
+    save_image(Gema_trunc, f"{saved_dir}/0G_trunc_ema.jpg",
+               nrow=int(math.sqrt(bs)), normalize=True, scale_each=True)
 
-  # ema.restore(generator_ddp.parameters())
+  with torch.cuda.amp.autocast(use_amp_G):
+    copied_metadata = copy.deepcopy(G_kwargs)
+    copied_metadata['h_stddev'] = 0
+    copied_metadata['v_stddev'] = 0
+    copied_metadata['h_mean'] = math.pi * 0.5 + 0.5
+    Gz_tilted = G(fixed_z, return_aux_img=True, forward_points=256 ** 2, **copied_metadata)[0]
+    save_image(Gz_tilted, f"{saved_dir}/0Gz_tilted.jpg",
+               nrow=int(math.sqrt(bs)), normalize=True, scale_each=True)
+
+    Gema_z_tilted = G_ema(fixed_z, return_aux_img=True, forward_points=256 ** 2, **copied_metadata)[0]
+    save_image(Gema_z_tilted, f"{saved_dir}/0Gz_tilted_ema.jpg",
+               nrow=int(math.sqrt(bs)), normalize=True, scale_each=True)
+
+  # Monitor mirror symmetry
+  bs = min(20, bs)
+  sub_fixed_z = {}
+  for name, z_ in fixed_z.items():
+    sub_fixed_z[name] = z_[:bs]
+  fixed_z = sub_fixed_z
+
+  with torch.cuda.amp.autocast(use_amp_G):
+    copied_metadata = copy.deepcopy(G_kwargs)
+    copied_metadata['h_stddev'] = 0
+    copied_metadata['v_stddev'] = 0
+    copied_metadata['h_mean'] = 1.44
+    Gema_flip1 = G_ema(fixed_z, return_aux_img=True, forward_points=256 ** 2, **copied_metadata)[0]
+
+    copied_metadata['h_mean'] = 1.70
+    Gema_flip2 = G_ema(fixed_z, return_aux_img=True, forward_points=256 ** 2, **copied_metadata)[0]
+
+    Gema_flip = torch.cat([Gema_flip1, Gema_flip2])
+    save_image(Gema_flip, f"{saved_dir}/0G_flip_ema.jpg", nrow=bs//2, normalize=True, scale_each=True)
+
   pass
 
 
@@ -318,27 +168,6 @@ def get_curriculum(curriculum_name):
     assert new_attr not in curriculum
     curriculum[new_attr] = value
   return curriculum
-
-
-def lambda_foo(itr,
-               start_itrs,
-               warmup_itrs,
-               mul_lr=1):
-  """
-
-  :param itr: itr >= start_itrs
-  :param start_itrs:
-  :param warmup_itrs:
-  :param mul_lr:
-  :return:
-  """
-  if itr < start_itrs:
-    return mul_lr
-  else:
-    if itr < start_itrs + warmup_itrs:
-      return (itr - start_itrs) / warmup_itrs * mul_lr
-    else:
-      return mul_lr
 
 
 def build_optimizer(generator_ddp,
@@ -391,36 +220,42 @@ def train(rank,
   device = torch.device(rank)
   torch_utils.init_seeds(seed=global_cfg.seed, rank=rank)
 
-  curriculum = get_curriculum(curriculum_name=opt.curriculum)
-
-  metadata = curriculums.extract_metadata(curriculum, 0)
+  # curriculum = get_curriculum(curriculum_name=opt.curriculum)
 
   scaler_G = torch.cuda.amp.GradScaler(enabled=global_cfg.use_amp_G)
   scaler_D = torch.cuda.amp.GradScaler(enabled=global_cfg.use_amp_D)
-
-  state_dict = {
-    'best_fid': np.inf,
-    'worst_fid': 0,
-    'step': 0,
-    'epoch': 0,
-  }
 
   generator = build_model(cfg=global_cfg.G_cfg).to(device)
   discriminator = build_model(cfg=global_cfg.D_cfg, kwargs_priority=True, diffaug=global_cfg.diffaug).to(device)
   G_ema = copy.deepcopy(generator)
   ema_model = comm_model_utils.EMA(source=generator, target=G_ema, decay=0.999, start_itr=1000)
 
-  resume_dir = f"{global_cfg.tl_resumedir}/ckptdir/resume"
+  # ddp
+  generator_ddp = DDP(generator, device_ids=[rank], find_unused_parameters=True, broadcast_buffers=False)
+  discriminator_ddp = DDP(discriminator, device_ids=[rank], find_unused_parameters=True, broadcast_buffers=False)
+  generator = generator_ddp.module
+  generator.set_device(device)
+
+  optimizer_G, optimizer_D = build_optimizer(generator_ddp=generator_ddp, discriminator_ddp=discriminator_ddp)
+
+  state_dict = {
+    'cur_fid': np.inf,
+    'best_fid': np.inf,
+    'worst_fid': 0,
+    'step': 0,
+  }
+
+  model_dict = {
+    'generator': generator_ddp.module,
+    'G_ema': G_ema,
+    'discriminator': discriminator_ddp.module,
+    # 'optimizer_G': optimizer_G,
+    # 'optimizer_D': optimizer_D,
+    'state_dict': state_dict,
+  }
 
   if global_cfg.tl_resume:
-
-    model_dict = {
-      'generator': generator,
-      'discriminator': discriminator,
-      'state_dict': state_dict,
-    }
-    if global_cfg.load_G_ema:
-      model_dict['G_ema'] = G_ema
+    resume_dir = f"{global_cfg.tl_resumedir}/ckptdir/resume"
     torch_utils.load_models(save_dir=resume_dir, model_dict=model_dict, strict=False, rank=rank)
     if global_cfg.load_G_ema:
       ema_model.update_target_dict(G_ema.state_dict())
@@ -431,18 +266,9 @@ def train(rank,
       state_dict['best_fid'] = np.inf
     logger.info(pprint.pformat(state_dict))
 
-  # ddp
-  generator_ddp = DDP(generator, device_ids=[rank], find_unused_parameters=True, broadcast_buffers=False)
-  discriminator_ddp = DDP(discriminator, device_ids=[rank], find_unused_parameters=True, broadcast_buffers=False)
-  generator = generator_ddp.module
-  generator.set_device(device)
-  discriminator = discriminator_ddp.module
-
-  optimizer_G, optimizer_D = build_optimizer(generator_ddp=generator_ddp, discriminator_ddp=discriminator_ddp)
-
+  if global_cfg.tl_debug:
+    global_cfg.fixed_z_bs = 4
   fixed_z = generator.get_zs(global_cfg.fixed_z_bs)
-  use_diffaug = global_cfg.get('use_diffaug', False)
-
   dummy_tensor = torch.tensor([0], device=device)
   # ----------
   #  Training
@@ -466,7 +292,6 @@ def train(rank,
   for step in range(start_itr, global_cfg.total_iters):
     pbar.update()
     summary_ddict.clear()
-    metadata = curriculums.extract_metadata(curriculum, state_dict['step'])
 
     # for i, (imgs, _) in enumerate(dataloader):
       # real_imgs = imgs.to(device, non_blocking=True)
@@ -573,16 +398,10 @@ def train(rank,
     except:
       summary_ddict['D_total_norm']['D_total_norm'] = np.nan
       logger.info(traceback.format_exc())
-      saved_models(G_ema=G_ema,
-                   generator_ddp=generator_ddp,
-                   discriminator_ddp=discriminator_ddp,
-                   optimizer_G=optimizer_G,
-                   optimizer_D=optimizer_D,
-                   scaler_G=scaler_G,
-                   scaler_D=scaler_D,
-                   state_dict=state_dict,
-                   step=discriminator.step,
-                   epoch=discriminator.epoch,
+      saved_models(model_dict=model_dict,
+                   info_msg=f"step: {state_dict['step']}",
+                   G=generator, G_ema=G_ema, G_kwargs=global_cfg.G_kwargs,
+                   fixed_z=fixed_z, img_size=global_cfg.img_size,
                    saved_dir=f"{global_cfg.tl_ckptdir}/D_crupted")
       # exit(0)
       optimizer_D.zero_grad()
@@ -629,29 +448,21 @@ def train(rank,
     except:
       summary_ddict['G_total_norm']['G_total_norm'] = np.nan
       logger.info(traceback.format_exc())
-      saved_models(G_ema=G_ema,
-                   generator_ddp=generator_ddp,
-                   discriminator_ddp=discriminator_ddp,
-                   optimizer_G=optimizer_G,
-                   optimizer_D=optimizer_D,
-                   scaler_G=scaler_G,
-                   scaler_D=scaler_D,
-                   state_dict=state_dict,
-                   step=discriminator.step,
-                   epoch=discriminator.epoch,
-                   saved_dir=f"{global_cfg.tl_ckptdir}/G_crupted",
-                   metadata=metadata)
+      saved_models(model_dict=model_dict,
+                   info_msg=f"step: {state_dict['step']}",
+                   G=generator, G_ema=G_ema, G_kwargs=global_cfg.G_kwargs,
+                   fixed_z=fixed_z, img_size=global_cfg.img_size,
+                   saved_dir=f"{global_cfg.tl_ckptdir}/G_crupted")
       # exit(0)
       optimizer_G.zero_grad()
     scaler_G.step(optimizer_G)
     scaler_G.update()
     optimizer_G.zero_grad()
 
-    # ema.update(generator_ddp.parameters())
-    # ema2.update(generator_ddp.parameters())
+    # update ema
     ema_model.update(itr=state_dict['step'], source_dict=generator_ddp.module.state_dict())
 
-    if (rank == 0 and (step + 1) % global_cfg.log_every == 0 and step > 1000) or global_cfg.tl_debug:
+    if (rank == 0 and (step + 1) % global_cfg.log_every == 0) or global_cfg.tl_debug:
       summary_ddict['lr']['G_lr'] = torch_utils.get_optimizer_lr(optimizer_G)
       summary_ddict['lr']['D_lr'] = torch_utils.get_optimizer_lr(optimizer_D)
       summary_ddict['img_size']['img_size'] = global_cfg.img_size
@@ -662,22 +473,16 @@ def train(rank,
       summary_ddict['r1_lambda']['r1_lambda'] = global_cfg.r1_lambda
       summary_ddict['grad_clip']['grad_clip'] = global_cfg.grad_clip
 
-      summary_defaultdict2txtfig(summary_ddict, prefix='train', step=state_dict['step'], textlogger=global_textlogger)
+      if step > 1000:
+        summary_defaultdict2txtfig(summary_ddict, prefix='train', step=state_dict['step'], textlogger=global_textlogger)
       summary_str = tl2_utils.get_print_dict_str(summary_ddict, outdir=global_cfg.tl_outdir,
                                                  suffix_str=pbar.get_string())
       print(summary_str)
 
 
-    # if discriminator.step % global_cfg.get('log_img_every', 500) == 0:
-    #   save_images(generator_ddp=generator_ddp,
-    #               G_ema=G_ema,
-    #               discriminator=discriminator,
-    #               metadata=metadata,
-    #               fixed_z=fixed_z,
-    #               device=device)
-
     state_dict['step'] += 1
     if (step + 1) % global_cfg.eval_every == 0 or global_cfg.tl_debug:
+      # output real images
       setup_evaluation(rank=rank,
                        world_size=world_size,
                        data_cfg=global_cfg.data_cfg,
@@ -699,44 +504,43 @@ def train(rank,
                  batch_size=global_cfg.eval_batch_size)
       ddp_utils.d2_synchronize()
 
+      moxing_utils.copy_data(rank=rank, global_cfg=global_cfg, **global_cfg.obs_inception_v3)
+      global_cfg.obs_inception_v3.disable = True
       if rank == 0:
-        fid = fid_evaluation.calculate_fid(real_dir=f"{opt.output_dir}/fid/real",
-                                           fake_dir=f"{opt.output_dir}/fid/fake",
-                                           batch_size=128)
-        logger.info(f"\nstep: {discriminator.step}, fid: {fid}\n")
-        summary_dict = {
-          'fid': fid
-        }
-        summary_dict2txtfig(summary_dict, prefix='eval', step=discriminator.step,
-                            textlogger=global_textlogger)
+        metric_dict = eval_fid(real_dir=f"{global_cfg.tl_outdir}/exp/fid/real",
+                               fake_dir=f"{global_cfg.tl_outdir}/exp/fid/fake")
+        logger.info(f"\nstep: {state_dict['step']}, {pprint.pformat(metric_dict)}\n")
+        summary_dict2txtfig(metric_dict, prefix='eval', step=state_dict['step'], textlogger=global_textlogger)
+        state_dict['cur_fid'] = metric_dict['FID']
 
-        best_dir = f"{global_cfg.tl_ckptdir}/best_fid"
-        if not os.path.exists(best_dir):
-          state_dict = {'best_fid': np.inf}
-        if state_dict['best_fid'] > fid:
-          state_dict['best_fid'] = fid
-          saved_models(G_ema=G_ema,
-                       generator_ddp=generator_ddp,
-                       discriminator_ddp=discriminator_ddp,
-                       optimizer_G=optimizer_G,
-                       optimizer_D=optimizer_D,
-                       scaler_G=scaler_G,
-                       scaler_D=scaler_D,
-                       state_dict=state_dict,
-                       step=discriminator.step,
-                       epoch=discriminator.epoch,
-                       saved_dir=best_dir,
-                       metadata=metadata)
-        if opt.modelarts:
-          modelarts_utils.modelarts_sync_results_dir(cfg=global_cfg, join=False)
-      dist.barrier()
-      torch.cuda.empty_cache()
+        if state_dict['best_fid'] > metric_dict['FID']:
+          state_dict['best_fid'] = metric_dict['FID']
+          saved_models(model_dict=model_dict,
+                       info_msg=f"step: {state_dict['step']}\n"
+                                f"cur_fid: {state_dict['cur_fid']}\n"
+                                f"best_fid: {state_dict['best_fid']}",
+                       G=generator, G_ema=G_ema, G_kwargs=global_cfg.G_kwargs,
+                       fixed_z=fixed_z, img_size=global_cfg.img_size,
+                       saved_dir=f"{global_cfg.tl_ckptdir}/best_fid")
 
-    discriminator.step += 1
-    generator.step += 1
+        info_msg = f"step: {state_dict['step']}\n" \
+                   f"cur_fid: {state_dict['cur_fid']}\n" \
+                   f"best_fid: {state_dict['best_fid']}"
+        # backup
+        saved_models(model_dict=model_dict,
+                     info_msg=info_msg,
+                     G=generator, G_ema=G_ema, G_kwargs=global_cfg.G_kwargs,
+                     fixed_z=fixed_z, img_size=global_cfg.img_size)
+        # resume
+        saved_models(model_dict=model_dict,
+                     info_msg=info_msg,
+                     G=generator, G_ema=G_ema, G_kwargs=global_cfg.G_kwargs,
+                     fixed_z=fixed_z, img_size=global_cfg.img_size,
+                     saved_dir=f"{global_cfg.tl_ckptdir}/resume")
 
-    discriminator.epoch += 1
-    generator.epoch += 1
+        moxing_utils.modelarts_sync_results_dir(cfg=global_cfg, join=False)
+        # end rank == 0
+      ddp_utils.d2_synchronize()
 
   cleanup()
   pass

@@ -122,12 +122,15 @@ def main():
   global_cfg.obs_inception_v3.disable = True
   if rank == 0:
     metric_dict = eval_fid(real_dir=real_dir, fake_dir=fake_dir, kid=global_cfg.kid)
+    logger.info(global_cfg.dump())
     logger.info(pprint.pformat(metric_dict))
 
-  ddp_utils.d2_synchronize()
-
-  if rank == 0:
+    shutil.rmtree(real_dir, ignore_errors=True)
+    shutil.rmtree(fake_dir, ignore_errors=True)
     moxing_utils.modelarts_sync_results_dir(global_cfg, join=True)
+
+  logger.info(global_cfg.tl_outdir)
+  ddp_utils.d2_synchronize()
   pass
 
 
