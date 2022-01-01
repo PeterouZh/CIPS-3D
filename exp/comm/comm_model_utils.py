@@ -103,7 +103,7 @@ class EMA(object):
     :return:
     """
 
-    if itr and itr < self.start_itr:
+    if itr is not None and itr < self.start_itr:
       decay = 0.0
     else:
       decay = self.decay

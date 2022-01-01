@@ -254,9 +254,23 @@ def train(rank,
     'state_dict': state_dict,
   }
 
-  if global_cfg.tl_resume:
-    resume_dir = f"{global_cfg.tl_resumedir}/ckptdir/resume"
-    torch_utils.load_models(save_dir=resume_dir, model_dict=model_dict, strict=False, rank=rank)
+  if global_cfg.tl_resume or global_cfg.load_finetune:
+    if global_cfg.tl_resume:
+      resume_dir = f"{global_cfg.tl_resumedir}/ckptdir/resume"
+      torch_utils.load_models(save_dir=resume_dir, model_dict=model_dict, strict=False, rank=rank)
+    elif global_cfg.load_finetune:
+      moxing_utils.copy_data(rank=rank, global_cfg=global_cfg,
+                             datapath_obs=global_cfg.finetune_dir, datapath=global_cfg.finetune_dir)
+      finetune_model_dict = {
+        'generator': generator_ddp.module,
+        'G_ema': G_ema,
+        'discriminator': discriminator_ddp.module,
+      }
+      torch_utils.load_models(save_dir=global_cfg.finetune_dir, model_dict=finetune_model_dict,
+                              strict=False, rank=rank)
+    else:
+      assert 0
+
     if global_cfg.load_G_ema:
       ema_model.update_target_dict(G_ema.state_dict())
     else:
@@ -472,7 +486,7 @@ def train(rank,
       summary_ddict['scaler']['scaler_D'] = scaler_D.get_scale()
       summary_ddict['r1_lambda']['r1_lambda'] = global_cfg.r1_lambda
       summary_ddict['grad_clip']['grad_clip'] = global_cfg.grad_clip
-
+      summary_ddict['nerf_noise']['nerf_noise'] = nerf_noise
       if step > 1000:
         summary_defaultdict2txtfig(summary_ddict, prefix='train', step=state_dict['step'], textlogger=global_textlogger)
       summary_str = tl2_utils.get_print_dict_str(summary_ddict, outdir=global_cfg.tl_outdir,

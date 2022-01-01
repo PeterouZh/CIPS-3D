@@ -159,7 +159,7 @@ train_ffhq:
   d_reg_every: 1
   train_aux_img: true
   update_aux_every: 1
-  grad_clip: 50
+  grad_clip: 10
   forward_points: 256
   grad_points: 256
   # log
@@ -173,6 +173,8 @@ train_ffhq:
   # resume
   load_G_ema: true
   reset_best_fid: false
+  load_finetune: false
+  finetune_dir: "results/CIPS-3D/ffhq_exp/train_ffhq-20211231_221845_770/ckptdir/best_fid"
 
 
 eval_fid:

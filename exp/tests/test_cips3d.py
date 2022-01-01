@@ -91,14 +91,14 @@ class Testing_ffhq_exp(unittest.TestCase):
 
     bucket_root = "/home/ma-user/work/ZhouPeng/bucket_3690/"
 
-    FID = collections.defaultdict(dict)
-    title = 'FID'
+    FID_r32 = collections.defaultdict(dict)
+    title = 'FID_r32'
     log_file = 'textdir/eval.ma0.FID.log'
     dd = eval(title)
     dd[f'{bucket_root}/results/CIPS-3D/ffhq_exp/train_ffhq-20211231_221348_328'] = \
-      {'20211231_221348_328-ffhq_r32-gpu.8': f"{log_file}", }
+      {'20211231_221348_328-ffhq_r32-gpu.8x8': f"{log_file}", }
     dd[f'{bucket_root}/results/CIPS-3D/ffhq_exp/train_ffhq-20211231_221845_770'] = \
-      {'20211231_221845_770-ffhq_r32-gpu.4': f"{log_file}", }
+      {'20211231_221845_770-ffhq_r32-gpu.4x8': f"{log_file}", }
 
     dd['properties'] = {'title': title,
                         # 'xlim': [0, 3000000],
@@ -106,6 +106,23 @@ class Testing_ffhq_exp(unittest.TestCase):
                         }
     default_dicts[title] = dd
     show_max.append(False)
+
+    FID_r64 = collections.defaultdict(dict)
+    title = 'FID_r64'
+    log_file = 'textdir/eval.ma0.FID.log'
+    dd = eval(title)
+    dd[f'{bucket_root}/results/CIPS-3D/ffhq_exp/train_ffhq-20220101_130834_616'] = \
+      {'20220101_130834_616-ffhq_r64-gpu.8x4': f"{log_file}", }
+    dd[f'{bucket_root}/results/CIPS-3D/ffhq_exp/train_ffhq-20220101_123421_189'] = \
+      {'20220101_123421_189-ffhq_r64-gpu.4x8': f"{log_file}", }
+
+    dd['properties'] = {'title': title,
+                        # 'xlim': [0, 3000000],
+                        # 'ylim': [0, 100]
+                        }
+    default_dicts[title] = dd
+    show_max.append(False)
+
 
     plotobs = PlotResults()
     label2datas_list = plotobs.plot_defaultdicts(
