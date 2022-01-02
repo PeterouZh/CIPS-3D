@@ -62,8 +62,10 @@ class Testing_ffhq_exp(unittest.TestCase):
 
   def test__plot_fid(self):
     """
-    python -c "from exp.tests.test_styleganv2 import Testing_stylegan2_style_position;\
-      Testing_stylegan2_style_position().test_plot_FID_cifar10_style_position()"
+    export PYTHONPATH=.:./tl2_lib
+    python -c "from exp.tests.test_cips3d import Testing_ffhq_exp;\
+      Testing_ffhq_exp().test__plot_fid()"
+
     """
     if 'CUDA_VISIBLE_DEVICES' not in os.environ:
       os.environ['CUDA_VISIBLE_DEVICES'] = '0'
@@ -115,6 +117,24 @@ class Testing_ffhq_exp(unittest.TestCase):
       {'20220101_130834_616-ffhq_r64-gpu.8x4': f"{log_file}", }
     dd[f'{bucket_root}/results/CIPS-3D/ffhq_exp/train_ffhq-20220101_123421_189'] = \
       {'20220101_123421_189-ffhq_r64-gpu.4x8': f"{log_file}", }
+    dd[f'{bucket_root}/results/CIPS-3D/ffhq_exp/train_ffhq-20220101_141337_543'] = \
+      {'20220101_141337_543-ffhq_r64-gpu.4x8-finetune.F': f"{log_file}", }
+
+    dd['properties'] = {'title': title,
+                        # 'xlim': [0, 3000000],
+                        # 'ylim': [0, 100]
+                        }
+    default_dicts[title] = dd
+    show_max.append(False)
+
+    FID_r128 = collections.defaultdict(dict)
+    title = 'FID_r128'
+    log_file = 'textdir/eval.ma0.FID.log'
+    dd = eval(title)
+    dd[f'{bucket_root}/results/CIPS-3D/ffhq_exp/train_ffhq-20220102_120440_740'] = \
+      {'20220102_120440_740-ffhq_r128-gpu.8x4-aux.T': f"{log_file}", }
+    dd[f'{bucket_root}/results/CIPS-3D/ffhq_exp/train_ffhq-20220102_121420_779'] = \
+      {'20220102_121420_779-ffhq_r128-gpu.8x4-aux.F': f"{log_file}", }
 
     dd['properties'] = {'title': title,
                         # 'xlim': [0, 3000000],
