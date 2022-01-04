@@ -1,0 +1,215 @@
+root_obs: &root_obs s3://bucket-3690/ZhouPeng
+modelarts_download: &modelarts_download
+  ffhq256:
+    datapath_obs: '{global_cfg.root_obs}/keras/ffhq/downsample_ffhq_256x256.zip'
+    datapath: "datasets/ffhq/downsample_ffhq_256x256.zip"
+    overwrite: false
+    eval: true
+    unzip: true
+  ffhq256_list:
+    datapath_obs: '{global_cfg.root_obs}/keras/ffhq/ffhq_256.txt'
+    datapath: "datasets/ffhq/ffhq_256.txt"
+    overwrite: false
+    eval: true
+    unzip: false
+  fid_inception:
+    datapath_obs: '{global_cfg.root_obs}/keras/cache/torch/hub/checkpoints/weights-inception-2015-12-05-6726825d.pth'
+    datapath: "/home/ma-user/.cache/torch/hub/checkpoints/weights-inception-2015-12-05-6726825d.pth"
+    overwrite: false
+    eval: true
+    unzip: false
+
+
+obs_ffhq_r256: &obs_ffhq_r256
+  datapath_obs: 'keras/ffhq/downsample_ffhq_256x256.zip'
+  datapath: "datasets/ffhq/downsample_ffhq_256x256.zip"
+  disable: false
+  overwrite: false
+  unzip: false
+
+obs_inception_v3: &obs_inception_v3
+  datapath_obs: 'keras/cache/torch/hub/checkpoints/weights-inception-2015-12-05-6726825d.pth'
+  datapath: "~/.cache/torch/hub/checkpoints/weights-inception-2015-12-05-6726825d.pth"
+  disable: false
+  overwrite: false
+  unzip: false
+
+
+G_cfg_3D2D: &G_cfg_3D2D
+  register_modules:
+  - exp.cips3d.models.generator
+  name: exp.cips3d.models.generator.GeneratorNerfINR
+  z_dim: 256
+  optim:
+    lr: 0.0002
+    equal_lr: 0.001
+  nerf_cfg:
+    in_dim: 3
+#    hidden_dim: 256
+    hidden_dim: 128
+    hidden_layers: 2
+    rgb_dim: 32
+#    style_dim: 256
+    style_dim: 128
+  mapping_nerf_cfg:
+    z_dim: 256
+#    hidden_dim: 256
+    hidden_dim: 128
+    base_layers: 4
+    head_layers: 0
+  inr_cfg:
+    input_dim: 32
+#    style_dim: 256
+#    hidden_dim: 256
+    style_dim: 512
+    hidden_dim: 512
+#    pre_rgb_dim: 32
+    pre_rgb_dim: 3
+  mapping_inr_cfg:
+    z_dim: 512
+#    hidden_dim: 256
+    hidden_dim: 512
+#    base_layers: 4
+    base_layers: 8
+    head_layers: 0
+    add_norm: true
+    norm_out: true
+
+G_kwargs: &G_kwargs
+  fov: 12
+  ray_start: 0.88
+  ray_end: 1.12
+  num_steps: 12
+  h_stddev: 0.3
+  v_stddev: 0.155
+  hierarchical_sample: true
+  psi: 1.
+  sample_dist: 'gaussian'
+
+_build_generator:
+  G_cfg: *G_cfg_3D2D
+  G_kwargs: *G_kwargs
+  network_pkl: cache_pretrained/cips3d/G_ema_ffhq.pth
+
+
+D_cfg: &D_cfg
+  register_modules:
+    - exp.cips3d.models.discriminator
+  name: exp.cips3d.models.discriminator.Discriminator_MultiScale_Aux
+  diffaug: false
+  max_size: 1024
+  channel_multiplier: 2
+  first_downsample: false
+  stddev_group: 0
+
+_build_discriminator:
+  D_cfg: *D_cfg
+#  network_pkl: cache_pretrained/cips3d/G_ema_ffhq.pth
+
+
+dataset_ffhq_r256: &dataset_ffhq_r256
+  register_modules:
+    - "tl2.proj.pytorch.examples.dataset_stylegan3.dataset"
+  name: "ImageFolderDataset_of_stylegan"
+  path: 'datasets/ffhq/downsample_ffhq_256x256.zip'
+  use_labels: False
+  max_size: null
+#  max_size: 100
+  xflip: True
+  resize_resolution: null
+#  resize_resolution: 1024
+  random_seed: 0
+
+
+_setup_evaluation:
+  base: train_ffhq
+
+_gen_images:
+  base: train_ffhq
+  network_pkl: cache_pretrained/cips3d/G_ema_ffhq.pth
+
+_save_images:
+  base: train_ffhq
+  network_pkl: cache_pretrained/cips3d/G_ema_ffhq.pth
+
+
+train_ffhq:
+  seed: 1234
+  G_cfg: *G_cfg_3D2D
+  D_cfg: *D_cfg
+  data_cfg: *dataset_ffhq_r256
+  root_obs: *root_obs
+  obs_training_dataset: *obs_ffhq_r256
+  obs_inception_v3: *obs_inception_v3
+  G_kwargs: *G_kwargs
+  # train
+  use_amp_G: false
+  use_amp_D: false
+  gen_lr: 0.0002
+  disc_lr: 0.002
+  betas: [0, 0.999]
+  fixed_z_bs: 25
+  total_iters: 200000
+  batch_size: 4
+  batch_split: 1
+  img_size: 32
+  num_workers: 8
+  diffaug: false
+  r1_lambda: 10.
+  d_reg_every: 1
+  train_aux_img: true
+  update_aux_every: 1
+  grad_clip: 10
+  forward_points: 256
+  grad_points: 256
+  # log
+  log_every: 10
+  eval_every: 500
+  # eval
+  del_fid_real_images: true
+  num_images_real_eval: 2048
+  num_images_gen_eval: 2048
+  eval_batch_size: 16
+  # resume
+  load_G_ema: true
+  reset_best_fid: false
+  load_finetune: false
+  finetune_dir: "results/CIPS-3D/ffhq_exp/train_ffhq-20211231_221845_770/ckptdir/best_fid"
+
+
+train_ffhq_high:
+  base: train_ffhq
+  train_aux_img: false
+  D_cfg:
+    diffaug: true
+  G_cfg:
+    register_modules:
+    - exp.cips3d.models.generator
+    name: exp.cips3d.models.generator.GeneratorNerfINR_freeze_NeRF
+  diffaug: true
+  gen_lr: 0.0001
+  disc_lr: 0.0005
+  img_size: 256
+  load_nerf_ema: true
+  load_finetune: true
+  finetune_dir: "results/CIPS-3D/ffhq_exp/train_ffhq-20220102_121420_779/ckptdir/best_fid"
+
+
+eval_fid:
+  base: train_ffhq
+  network_pkl_obs: "keras/CIPS-3D/cache_pretrained/cips3d/G_ema_ffhq.pth"
+  network_pkl: "cache_pretrained/cips3d/G_ema_ffhq.pth"
+  img_size: 256
+  num_images_real_eval: 50000
+  num_images_gen_eval: 50000
+  kid: false
+
+
+
+
+
+
+
+
+
+

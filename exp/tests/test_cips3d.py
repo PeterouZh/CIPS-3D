@@ -53,8 +53,111 @@ class Testing_snippet(unittest.TestCase):
 
     from tl2.modelarts import moxing_utils
 
-    moxing_utils.moxing_copy_parallel(src_url="s3://bucket-3690/ZhouPeng/keras/ffhq/",
-                                      dst_url="/home/ma-user/work/ZhouPeng/.keras")
+    # moxing_utils.moxing_copy_parallel(src_url="s3://bucket-3690/ZhouPeng/keras/Faces/AFHQv2/",
+    #                                   dst_url="/home/ma-user/work/ZhouPeng/.keras/AFHQv2")
+
+    moxing_utils.moxing_copy_parallel(src_url="/home/ma-user/work/ZhouPeng/.keras/AFHQv2",
+                                      dst_url="s3://bucket-3690/ZhouPeng/keras/")
+    pass
+
+
+class Testing_PrepareDatasets(unittest.TestCase):
+
+  def test_afhq_r256(self, debug=True):
+    """
+    Usage:
+
+        # export CUDA_VISIBLE_DEVICES=$cuda_devices
+        # export RUN_NUM=$run_num
+
+        export CUDA_VISIBLE_DEVICES=0
+        export PORT=12345
+        export TIME_STR=0
+        export PYTHONPATH=.:./tl2_lib
+        python -c "from exp.tests.test_cips3d import Testing_PrepareDatasets;\
+          Testing_PrepareDatasets().test_afhq_r256(debug=False)"
+
+    :return:
+    """
+    if 'CUDA_VISIBLE_DEVICES' not in os.environ:
+      os.environ['CUDA_VISIBLE_DEVICES'] = '1'
+    if 'TIME_STR' not in os.environ:
+      os.environ['TIME_STR'] = '0'
+    if 'RUN_NUM' not in os.environ:
+      os.environ['RUN_NUM'] = '0'
+    from tl2 import tl2_utils
+    from tl2.launch.launch_utils import \
+      (get_command_and_outdir, setup_outdir_and_yaml, get_append_cmd_str, start_cmd_run)
+
+    tl_opts_list = tl2_utils.parser_args_from_list(name="--tl_opts", argv_list=sys.argv, type='list')
+    tl_opts = ' '.join(tl_opts_list)
+    print(f'tl_opts:\n {tl_opts}')
+
+    if debug:
+      # sys.argv.extend(['--tl_outdir', 'results/ffhq_exp/train_ffhq'])
+      pass
+    command, outdir = get_command_and_outdir(self, func_name=sys._getframe().f_code.co_name, file=__file__)
+    resume = os.path.isdir(f"{outdir}/ckptdir/resume") and \
+             tl2_utils.parser_args_from_list(name="--tl_outdir", argv_list=sys.argv, type='str') is not None
+    argv_str = f"""
+                --tl_config_file none
+                --tl_command none
+                --tl_outdir {outdir}
+                {"--tl_resume --tl_resumedir " + outdir if resume else ""}
+                --tl_opts {tl_opts}
+                """
+    args, cfg = setup_outdir_and_yaml(argv_str, return_cfg=True)
+
+    if int(os.environ['RUN_NUM']) > 0:
+      run_command = f"""
+                  python -c "from tl2.modelarts.tests.test_run import TestingRun;\
+                        TestingRun().test_run_v2(number={os.environ['RUN_NUM']}, )" \
+                        --tl_opts root_obs {cfg.root_obs}
+                  """
+      p = tl2_utils.Worker(name='Run', args=(run_command,))
+      p.start()
+
+    n_gpus = len(os.environ['CUDA_VISIBLE_DEVICES'].split(','))
+    PORT = os.environ.get('PORT', 12345)
+
+    os.environ['DNNLIB_CACHE_DIR'] = "cache_dnnlib"
+    os.environ['TORCH_EXTENSIONS_DIR'] = "cache_torch_extensions"
+    os.environ['PATH'] = f"{os.path.dirname(sys.executable)}:{os.environ['PATH']}"
+    os.environ['MAX_JOBS '] = "8"
+
+    cmd_str = f"""
+        python 
+        scripts/dataset_tool.py \
+        --source=datasets/AFHQv2/AFHQv2 \
+        --dest=datasets/AFHQv2/AFHQv2_stylegan2.zip \
+        --width=256 --height=256
+        {get_append_cmd_str(args)}
+        """
+    if debug:
+      cmd_str += f"""
+                  --tl_debug
+                  """
+    else:
+      cmd_str += f"""
+                    {tl_opts}
+                  """
+    start_cmd_run(cmd_str)
+    # from tl2.launch.launch_utils import update_parser_defaults_from_yaml, global_cfg
+    # from tl2.modelarts import moxing_utils
+
+    # update_parser_defaults_from_yaml(parser)
+    # if rank == 0:
+    #   moxing_utils.setup_tl_outdir_obs(global_cfg)
+    #   moxing_utils.modelarts_sync_results_dir(global_cfg, join=True)
+
+    # moxing_utils.modelarts_sync_results_dir(global_cfg, join=True)
+
+    # modelarts_utils.setup_tl_outdir_obs(global_cfg)
+    # modelarts_utils.modelarts_sync_results_dir(global_cfg, join=True)
+    # modelarts_utils.prepare_dataset(global_cfg.get('modelarts_download', {}), global_cfg=global_cfg)
+    #
+    # modelarts_utils.prepare_dataset(global_cfg.get('modelarts_upload', {}), global_cfg=global_cfg, download=False)
+    # modelarts_utils.modelarts_sync_results_dir(global_cfg, join=True)
     pass
 
 
@@ -143,6 +246,23 @@ class Testing_ffhq_exp(unittest.TestCase):
     default_dicts[title] = dd
     show_max.append(False)
 
+    FID_r256 = collections.defaultdict(dict)
+    title = 'FID_r256'
+    log_file = 'textdir/eval.ma0.FID.log'
+    dd = eval(title)
+    dd[f'{bucket_root}/results/CIPS-3D/ffhq_exp/train_ffhq_high-20220104_161101_025'] = \
+      {'20220104_161101_025-ffhq_r256-gpu.8x4-aux.F': f"{log_file}", }
+    dd[f'{bucket_root}/results/CIPS-3D/ffhq_exp/train_ffhq_high-20220104_195958_205'] = \
+      {'20220104_195958_205-ffhq_r256-gpu.8x4-aux.F-diffaug.F': f"{log_file}", }
+    dd[f'{bucket_root}/results/CIPS-3D/ffhq_exp/train_ffhq_high-20220104_182014_278'] = \
+      {'20220104_182014_278-ffhq_r256-gpu.8x4-aux.T': f"{log_file}", }
+
+    dd['properties'] = {'title': title,
+                        # 'xlim': [0, 3000000],
+                        # 'ylim': [0, 100]
+                        }
+    default_dicts[title] = dd
+    show_max.append(False)
 
     plotobs = PlotResults()
     label2datas_list = plotobs.plot_defaultdicts(
@@ -840,8 +960,81 @@ class Testing_ffhq_exp(unittest.TestCase):
     pass
 
 
+class Testing_ffhq_exp_v1(unittest.TestCase):
 
+  def test__build_generator(self, debug=True):
+    """
+    Usage:
 
+        # export CUDA_VISIBLE_DEVICES=$cuda_devices
+        # export RUN_NUM=$run_num
+
+        export CUDA_VISIBLE_DEVICES=0,1,2,3,4,5,6,7
+        export PORT=12345
+        export TIME_STR=1
+        export PYTHONPATH=.
+        python -c "from tl2.launch.tests.test_launch import Testing_Launch_v1;\
+          Testing_Launch_v1().test_launch_ddp(debug=False)" \
+          --tl_opts root_obs s3://$bucket/ZhouPeng/ \
+          --tl_outdir results/train_ffhq_256/train_ffhq_256-20210726_202423_412
+          # --tl_outdir results/$resume_dir
+
+    :return:
+    """
+    if 'CUDA_VISIBLE_DEVICES' not in os.environ:
+      os.environ['CUDA_VISIBLE_DEVICES'] = '1'
+    if 'TIME_STR' not in os.environ:
+      os.environ['TIME_STR'] = '0'
+    if 'RUN_NUM' not in os.environ:
+      os.environ['RUN_NUM'] = '0'
+    from tl2 import tl2_utils
+    from tl2.launch.launch_utils import \
+      (get_command_and_outdir, setup_outdir_and_yaml, get_append_cmd_str, start_cmd_run)
+
+    tl_opts_list = tl2_utils.parser_args_from_list(name="--tl_opts", argv_list=sys.argv, type='list')
+    tl_opts = ' '.join(tl_opts_list)
+    print(f'tl_opts:\n {tl_opts}')
+
+    if debug:
+      # sys.argv.extend(['--tl_outdir', 'results/train_ffhq_256/train_ffhq_256-test'])
+      pass
+    command, outdir = get_command_and_outdir(self, func_name=sys._getframe().f_code.co_name, file=__file__)
+    resume = os.path.isdir(f"{outdir}/ckptdir/resume") and \
+             tl2_utils.parser_args_from_list(name="--tl_outdir", argv_list=sys.argv, type='str') is not None
+    argv_str = f"""
+                --tl_config_file exp/cips3d/configs/ffhq_exp_v1.yaml
+                --tl_command {command}
+                --tl_outdir {outdir}
+                {"--tl_resume --tl_resumedir " + outdir if resume else ""}
+                --tl_opts {tl_opts}
+                """
+    args, cfg = setup_outdir_and_yaml(argv_str, return_cfg=True)
+
+    import numpy as np
+    from torchvision.utils import make_grid
+    import torchvision.transforms.functional as tv_f
+    from tl2.proj.fvcore import build_model, TLCfgNode
+    from tl2.proj.fvcore.checkpoint import Checkpointer
+    from tl2.proj.pil import pil_utils
+    from exp.comm import comm_utils
+
+    device = 'cuda'
+
+    # cfg = TLCfgNode.load_yaml_with_command('exp/cips3d/configs/ffhq_exp.yaml', command='_build_generator')
+    G = build_model(cfg.G_cfg).to(device)
+    Checkpointer(G).load_state_dict_from_file(cfg.network_pkl)
+
+    bs = 4
+    img_size = 128
+
+    zs = G.get_zs(bs)
+    imgs = G(zs, img_size=img_size, **cfg.G_kwargs)[0]
+
+    imgs = make_grid(imgs, nrow=int(np.sqrt(bs)), normalize=True, scale_each=True)
+    img_pil = tv_f.to_pil_image(imgs)
+    pil_utils.imshow_pil(img_pil)
+
+    pass
 
 
 
