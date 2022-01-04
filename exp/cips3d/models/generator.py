@@ -1952,6 +1952,12 @@ class GeneratorNerfINR(GeneratorNerfINR_base):
 @MODEL_REGISTRY.register(name_prefix=__name__)
 class GeneratorNerfINR_freeze_NeRF(GeneratorNerfINR):
 
+  def load_nerf_ema(self, G_ema):
+    ret = self.siren.load_state_dict(G_ema.siren.state_dict())
+    ret = self.mapping_network_nerf.load_state_dict(G_ema.mapping_network_nerf.state_dict())
+    ret = self.aux_to_rbg.load_state_dict(G_ema.aux_to_rbg.state_dict())
+    pass
+
   def mapping_network(self,
                       z_nerf,
                       z_inr):

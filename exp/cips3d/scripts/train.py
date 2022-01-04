@@ -271,6 +271,9 @@ def train(rank,
     else:
       assert 0
 
+    if global_cfg.get('load_nerf_ema', False):
+      generator.load_nerf_ema(G_ema)
+
     if global_cfg.load_G_ema:
       ema_model.update_target_dict(G_ema.state_dict())
     else:
@@ -496,7 +499,7 @@ def train(rank,
 
 
     state_dict['step'] += 1
-    if (step + 1) % global_cfg.eval_every == 0 or global_cfg.tl_debug:
+    if step == 0 or (step + 1) % global_cfg.eval_every == 0 or global_cfg.tl_debug:
       # output real images
       setup_evaluation(rank=rank,
                        world_size=world_size,

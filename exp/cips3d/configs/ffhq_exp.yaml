@@ -177,6 +177,24 @@ train_ffhq:
   finetune_dir: "results/CIPS-3D/ffhq_exp/train_ffhq-20211231_221845_770/ckptdir/best_fid"
 
 
+train_ffhq_high:
+  base: train_ffhq
+  train_aux_img: false
+  D_cfg:
+    diffaug: true
+  G_cfg:
+    register_modules:
+    - exp.cips3d.models.generator
+    name: exp.cips3d.models.generator.GeneratorNerfINR_freeze_NeRF
+  diffaug: true
+  gen_lr: 0.0001
+  disc_lr: 0.0005
+  img_size: 256
+  load_nerf_ema: true
+  load_finetune: true
+  finetune_dir: "results/CIPS-3D/ffhq_exp/train_ffhq-20220102_121420_779/ckptdir/best_fid"
+
+
 eval_fid:
   base: train_ffhq
   network_pkl_obs: "keras/CIPS-3D/cache_pretrained/cips3d/G_ema_ffhq.pth"
@@ -185,15 +203,6 @@ eval_fid:
   num_images_real_eval: 50000
   num_images_gen_eval: 50000
   kid: false
-
-
-train_ffhq_r128:
-  base: train_ffhq
-  curriculum:
-    '0':
-      img_size: 128
-      gen_lr: 0.0001
-      disc_lr: 0.001
 
 
 

@@ -75,6 +75,9 @@ def setup_evaluation(rank,
       if rank == 0:
         pbar.update(batch_size)
       real_imgs, _, imgs_idx = next(data_loader_iter)
+
+      ddp_utils.d2_synchronize()
+
       # imgs_norm = to_norm_tensor(imgs, device=device)
       for img, idx in zip(real_imgs, imgs_idx):
         saved_path = f"{real_dir}/{idx:0>5}.jpg"
