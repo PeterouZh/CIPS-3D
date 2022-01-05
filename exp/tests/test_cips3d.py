@@ -258,6 +258,8 @@ class Testing_ffhq_exp(unittest.TestCase):
       {'20220104_182014_278-ffhq_r256-gpu.8x4-aux.T': f"{log_file}", }
     dd[f'{bucket_root}/results/CIPS-3D/ffhq_exp/train_ffhq_high-20220104_223240_621'] = \
       {'20220104_223240_621-ffhq_r256-gpu.8x4-aux.T-diffaug.F': f"{log_file}", }
+    dd[f'{bucket_root}/results/CIPS-3D/ffhq_exp/train_ffhq_high-20220105_143314_190'] = \
+      {'20220105_143314_190-ffhq_r256-gpu.8x4-aux.T-diffaug.T-warmupD.T': f"{log_file}", }
 
     dd['properties'] = {'title': title,
                         # 'xlim': [0, 3000000],

@@ -3,6 +3,8 @@
 This repository contains the code of the paper, </br > 
 [CIPS-3D: A 3D-Aware Generator of GANs Based on Conditionally-Independent Pixel Synthesis](https://arxiv.org/abs/2110.09788).
 
+:heavy_check_mark: (2022-1-5) The code has been refactored. Please refer to the scripts in `exp/cips3d/bash`. Please upgrade the `tl2` package with `pip install -I tl2`.
+
 :heavy_check_mark: (2021-11-26) The configuration files (yaml files) for training are being released.
 
 :heavy_check_mark: (2021-10-27) All the code files have been released. The configuration files (yaml files) for training will be released next. Now I have provided a GUI script and models to facilitate the experiment of network interpolation (see below). If you find any problems, please open an issue. Have fun with it. 
@@ -27,8 +29,8 @@ https://user-images.githubusercontent.com/26176709/137924557-1aa23be9-d079-472e-
 
 https://user-images.githubusercontent.com/26176709/137924581-f5dbf759-1c8c-4dc3-9b85-26f215f0fde0.mp4
 
-
-## Mirror symmetry problem
+<details>
+<summary>Mirror symmetry problem</summary>
 
 <img src="./.github/mirror_symm.png" width="800">
 
@@ -36,7 +38,10 @@ The problem of mirror symmetry refers to the sudden change of the direction of t
 
 Note that in the initial stage of training, the auxiliary discriminator must dominate the generator more than the main discriminator does. Otherwise, if the main discriminator dominates the generator, the mirror symmetry problem will still occur. In practice, progressive training is able to guarantee this. We have trained many times from scratch. Adding an auxiliary discriminator stably solves the mirror symmetry problem. If you find any problems with this idea, please open an issue. 
 
-## Envs
+</details>
+
+<details>
+<summary>Prepare environment</summary>
 
 ```bash
 
@@ -50,13 +55,16 @@ conda activate cips3d
 pip install torch==1.8.2+cu102 torchvision==0.9.2+cu102 -f https://download.pytorch.org/whl/lts/1.8/torch_lts.html
 
 pip install --no-cache-dir -r requirements.txt
+pip install -I tl2
 
 pip install -e torch_fidelity_lib
 pip install -e pytorch_ema_lib
 
 ```
 
-## Model interpolation 
+</details>
+
+## Model interpolation (web demo) 
 
 Download the pre-trained model [G_ema_ffhq.pth](https://github.com/PeterouZh/CIPS-3D/releases/download/v0.0.1/G_ema_ffhq.pth) 
 and [G_ema_cartoon.pth](https://github.com/PeterouZh/CIPS-3D/releases/download/v0.0.1/G_ema_cartoon.pth), and put them in `datasets/pretrained`.
@@ -81,22 +89,31 @@ python scripts/web_demo.py  \
 
 ```
 
-## Prepare dataset
+<details>
+<summary>Prepare dataset</summary>
 
-### FFHQ
-
-Download FFHQ dataset [images1024x1024](https://github.com/NVlabs/ffhq-dataset) (89.1 GB)
+**FFHQ:** Download FFHQ dataset [images1024x1024](https://github.com/NVlabs/ffhq-dataset) (89.1 GB)
 ```bash
 # Downsampling images in advance to speed up training
 python scripts/dataset_tool.py \
     --source=datasets/ffhq/images1024x1024 \
-    --dest=datasets/ffhq/images256x256 \
+    --dest=datasets/ffhq/downsample_ffhq_256x256.zip \
     --width=256 --height=256
 ```
-This command will create `datasets/ffhq/images256x256_image_list.txt` to be used for the training.
 
 
-## Training from scratch 
+</details>
+
+## Training 
+
+```bash
+Please refer to the scripts in `exp/cips3d/bash`.
+
+```
+
+<details>
+<summary>Old readme</summary>
+
 
 **Note**: 
 - In order to ensure that this code is consistent with my original dirty code, please follow me to reproduce the results using this code step by step. 
@@ -195,6 +212,7 @@ Let's wait for the training (maybe longer).
 
 ```
 
+</details>
 
 ## Citation
 
