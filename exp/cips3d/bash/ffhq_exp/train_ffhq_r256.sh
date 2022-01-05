@@ -64,9 +64,11 @@ export PYTHONPATH=.:./tl2_lib
 python -c "from exp.tests.test_cips3d import Testing_ffhq_exp;\
   Testing_ffhq_exp().test_train_ffhq_high(debug=False)" \
   --tl_opts \
-    batch_size 4 img_size 256 total_iters 800000 diffaug False \
-    load_finetune True finetune_dir results/CIPS-3D/ffhq_exp/train_ffhq-20220102_121420_779/ckptdir/best_fid
-#    load_finetune True finetune_dir results/CIPS-3D/ffhq_exp/train_ffhq-20220102_120440_740/ckptdir/best_fid
+    batch_size 4 img_size 256 total_iters 800000 diffaug True \
+    warmup_D True fade_steps 10000 \
+    load_finetune True finetune_dir results/CIPS-3D/ffhq_exp/train_ffhq-20220102_120440_740/ckptdir/best_fid
+#    load_finetune True finetune_dir results/CIPS-3D/ffhq_exp/train_ffhq-20220102_121420_779/ckptdir/best_fid
+
 
 #  --tl_outdir results/ffhq_exp/train_ffhq
 

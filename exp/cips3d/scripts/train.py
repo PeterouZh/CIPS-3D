@@ -320,6 +320,11 @@ def train(rank,
 
     nerf_noise = max(0, 1. - state_dict['step'] / 5000.)
 
+    if global_cfg.get('warmup_D', False):
+      alpha = min(1, step / global_cfg.fade_steps)
+    else:
+      alpha = 1.
+
     '''TRAIN DISCRIMINATOR'''
     torch_utils.requires_grad(generator_ddp, False)
     torch_utils.requires_grad(discriminator_ddp, True)
@@ -369,7 +374,7 @@ def train(rank,
       if aux_reg:
         real_imgs = torch.cat([real_imgs, real_imgs], dim=0)
       real_imgs.requires_grad_()
-      r_preds, _, _ = discriminator_ddp(real_imgs, use_aux_disc=aux_reg, summary_ddict=summary_ddict)
+      r_preds, _, _ = discriminator_ddp(real_imgs, alpha=alpha, use_aux_disc=aux_reg, summary_ddict=summary_ddict)
 
     d_regularize = step % global_cfg.d_reg_every == 0
 
@@ -391,7 +396,7 @@ def train(rank,
       else:
         grad_penalty = dummy_tensor
 
-      g_preds, _, _ = discriminator_ddp(gen_imgs, use_aux_disc=aux_reg)
+      g_preds, _, _ = discriminator_ddp(gen_imgs, alpha=alpha, use_aux_disc=aux_reg)
 
       d_loss = (torch.nn.functional.softplus(g_preds) +
                 torch.nn.functional.softplus(-r_preds) +
@@ -450,7 +455,7 @@ def train(rank,
                                                 **global_cfg.G_kwargs)
 
         with torch.cuda.amp.autocast(global_cfg.use_amp_D):
-          g_preds, _, _ = discriminator_ddp(gen_imgs.to(torch.float32), use_aux_disc=aux_reg)
+          g_preds, _, _ = discriminator_ddp(gen_imgs.to(torch.float32), alpha=alpha, use_aux_disc=aux_reg)
         g_loss = torch.nn.functional.softplus(-g_preds).mean()
       scaler_G.scale(g_loss).backward()
     # end accumulate gradients
@@ -491,6 +496,7 @@ def train(rank,
       summary_ddict['grad_clip']['grad_clip'] = global_cfg.grad_clip
       summary_ddict['nerf_noise']['nerf_noise'] = nerf_noise
       summary_ddict['train_aux_img']['train_aux_img'] = int(global_cfg.train_aux_img)
+      summary_ddict['alpha']['alpha'] = alpha
       if step > 1000:
         summary_defaultdict2txtfig(summary_ddict, prefix='train', step=state_dict['step'], textlogger=global_textlogger)
       summary_str = tl2_utils.get_print_dict_str(summary_ddict, outdir=global_cfg.tl_outdir,

@@ -648,8 +648,9 @@ class Discriminator_MultiScale_Aux(nn.Module):
               input,
               use_aux_disc=False,
               summary_ddict=None,
+              alpha=1.,
               **kwargs):
-    alpha = 1.
+
     if use_aux_disc:
       b = input.shape[0] // 2
       main_input = input[:b]

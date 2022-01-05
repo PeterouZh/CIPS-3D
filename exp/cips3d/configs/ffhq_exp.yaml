@@ -189,6 +189,8 @@ train_ffhq_high:
   diffaug: true
   gen_lr: 0.0001
   disc_lr: 0.0005
+  warmup_D: true
+  fade_steps: 10000
   img_size: 256
   load_nerf_ema: true
   load_finetune: true
