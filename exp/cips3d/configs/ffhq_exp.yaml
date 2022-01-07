@@ -162,6 +162,8 @@ train_ffhq:
   grad_clip: 10
   forward_points: 256
   grad_points: 256
+  warmup_D: false
+  fade_steps: 10000
   # log
   log_every: 10
   eval_every: 500

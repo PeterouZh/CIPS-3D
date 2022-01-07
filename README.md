@@ -101,6 +101,16 @@ python scripts/dataset_tool.py \
     --width=256 --height=256
 ```
 
+**CartoonFaces** Download [photo2cartoon](https://www.kaggle.com/arnaud58/photo2cartoon) dataset
+```bash
+# Prepare training dataset.
+python scripts/dataset_tool.py \
+    --source=datasets/photo2cartoon/photo2cartoon \
+    --dest=datasets/photo2cartoon/photo2cartoon_stylegan2.zip 
+    
+```
+
+
 
 </details>
 

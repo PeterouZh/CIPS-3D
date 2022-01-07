@@ -497,6 +497,7 @@ def train(rank,
       summary_ddict['nerf_noise']['nerf_noise'] = nerf_noise
       summary_ddict['train_aux_img']['train_aux_img'] = int(global_cfg.train_aux_img)
       summary_ddict['alpha']['alpha'] = alpha
+      summary_ddict['diffaug']['diffaug'] = int(global_cfg.diffaug)
       if step > 1000:
         summary_defaultdict2txtfig(summary_ddict, prefix='train', step=state_dict['step'], textlogger=global_textlogger)
       summary_str = tl2_utils.get_print_dict_str(summary_ddict, outdir=global_cfg.tl_outdir,

@@ -235,6 +235,10 @@ def make_transform(
         img = img.resize((ww, hh), resample)
         return np.array(img)
 
+    def identity(img):
+
+        return img
+
     def center_crop(width, height, img):
         crop = np.min(img.shape[:2])
         img = img[(img.shape[0] - crop) // 2 : (img.shape[0] + crop) // 2, (img.shape[1] - crop) // 2 : (img.shape[1] + crop) // 2]
@@ -287,8 +291,12 @@ def make_transform(
         canvas = cv2.copyMakeBorder(img.copy(), border_t, border_b, border_l, border_r, cv2.BORDER_REFLECT_101)
         return canvas
 
+    if transform is None and output_width is None and output_height is None:
+        return identity
+
     if transform is None:
         return functools.partial(scale, output_width, output_height)
+
     if transform == 'center-crop':
         if (output_width is None) or (output_height is None):
             error ('must specify --width and --height when using ' + transform + 'transform')
@@ -473,7 +481,8 @@ def convert_dataset(
     dataset_attrs = None
 
     labels = []
-    for idx, image in tqdm(enumerate(input_iter), total=num_files, desc=dest):
+    pbar = tqdm(enumerate(input_iter), total=num_files)
+    for idx, image in pbar:
         if debug and idx >= 10:
             break
 
@@ -482,6 +491,7 @@ def convert_dataset(
 
         # Apply crop and resize.
         img = transform_image(image['img'])
+        pbar.set_description_str(f"{dest} {img.shape}")
 
         # Transform may drop images.
         if img is None:
