@@ -15,7 +15,6 @@ from torchvision.utils import save_image
 from tl2.launch.launch_utils import update_parser_defaults_from_yaml, global_cfg
 from tl2.modelarts import modelarts_utils, moxing_utils
 from tl2.proj.pil import pil_utils
-from tl2.proj.skimage import skimage_utils
 from tl2.proj.pytorch.ddp import ddp_utils
 from tl2.tl2_utils import AverageMeter
 from tl2.proj.logger.textlogger import summary_dict2txtfig, global_textlogger

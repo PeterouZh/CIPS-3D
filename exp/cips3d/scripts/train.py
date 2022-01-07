@@ -228,7 +228,8 @@ def train(rank,
   generator = build_model(cfg=global_cfg.G_cfg).to(device)
   discriminator = build_model(cfg=global_cfg.D_cfg, kwargs_priority=True, diffaug=global_cfg.diffaug).to(device)
   G_ema = copy.deepcopy(generator)
-  ema_model = comm_model_utils.EMA(source=generator, target=G_ema, decay=0.999, start_itr=1000)
+  ema_start_itr = global_cfg.get('ema_start_itr', 1000)
+  ema_model = comm_model_utils.EMA(source=generator, target=G_ema, decay=0.999, start_itr=ema_start_itr)
 
   # ddp
   generator_ddp = DDP(generator, device_ids=[rank], find_unused_parameters=True, broadcast_buffers=False)
