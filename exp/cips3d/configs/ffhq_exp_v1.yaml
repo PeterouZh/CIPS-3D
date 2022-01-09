@@ -37,8 +37,8 @@ obs_inception_v3: &obs_inception_v3
 
 G_cfg_3D2D: &G_cfg_3D2D
   register_modules:
-  - exp.cips3d.models.generator
-  name: exp.cips3d.models.generator.GeneratorNerfINR
+  - exp.cips3d.models.generator_v1
+  name: exp.cips3d.models.generator_v1.GeneratorNerfINR
   z_dim: 256
   optim:
     lr: 0.0002
@@ -162,6 +162,8 @@ train_ffhq:
   grad_clip: 10
   forward_points: 256
   grad_points: 256
+  warmup_D: false
+  fade_steps: 10000
   # log
   log_every: 10
   eval_every: 500
@@ -189,10 +191,13 @@ train_ffhq_high:
   diffaug: true
   gen_lr: 0.0001
   disc_lr: 0.0005
+  warmup_D: true
+  fade_steps: 10000
   img_size: 256
   load_nerf_ema: true
   load_finetune: true
   finetune_dir: "results/CIPS-3D/ffhq_exp/train_ffhq-20220102_121420_779/ckptdir/best_fid"
+
 
 
 eval_fid:
