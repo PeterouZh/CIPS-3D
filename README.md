@@ -121,6 +121,11 @@ Please refer to the scripts in `exp/cips3d/bash`.
 
 ```
 
+## Bug fixed
+
+- If the training process is blocked when training with multi GPUs, please upgrade the tl2 via `pip install -I tl2`
+
+
 <details>
 <summary>Old readme</summary>
 
