@@ -66,7 +66,7 @@ python -c "from exp.tests.test_cips3d import Testing_afhq_exp;\
   Testing_afhq_exp().test_train_afhq_cat(debug=False)" \
   --tl_opts \
     batch_size 4 img_size 64 total_iters 200000 warmup_D True fade_steps 10000 \
-    train_aux_img True \
+    train_aux_img True G_kwargs.num_steps 48 \
     load_finetune False
 
 

@@ -65,12 +65,12 @@ G_kwargs: &G_kwargs
   fov: 12
   ray_start: 0.8
   ray_end: 1.2
-#  num_steps: 24
-#  h_stddev: 0.5
-#  v_stddev: 0.4
-  num_steps: 12
-  h_stddev: 0.3
-  v_stddev: 0.155
+  num_steps: 24
+  h_stddev: 0.5
+  v_stddev: 0.4
+#  num_steps: 12
+#  h_stddev: 0.3
+#  v_stddev: 0.155
   hierarchical_sample: true
   psi: 1.
 #  sample_dist: 'uniform'
