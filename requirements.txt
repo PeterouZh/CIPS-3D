@@ -8,7 +8,6 @@ scikit-video
 plyfile
 mrcfile
 pytorch-fid
-streamlit
+streamlit==0.65.0
 tsmoothie
 ninja
-
