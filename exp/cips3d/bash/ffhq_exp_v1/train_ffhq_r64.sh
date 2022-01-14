@@ -65,8 +65,10 @@ export PYTHONPATH=.:./tl2_lib
 python -c "from exp.tests.test_cips3d import Testing_ffhq_exp_v1;\
   Testing_ffhq_exp_v1().test_train_ffhq(debug=False)" \
   --tl_opts \
-    batch_size 4 img_size 64 total_iters 200000 warmup_D True
-
+    batch_size 4 img_size 64 total_iters 200000 \
+    warmup_D True fade_steps 10000 \
+    train_aux_img True G_kwargs.num_steps 48 \
+    load_finetune False
 
 
 

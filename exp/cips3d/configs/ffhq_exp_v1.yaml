@@ -185,9 +185,7 @@ train_ffhq_high:
   D_cfg:
     diffaug: true
   G_cfg:
-    register_modules:
-    - exp.cips3d.models.generator
-    name: exp.cips3d.models.generator.GeneratorNerfINR_freeze_NeRF
+    name: exp.cips3d.models.generator_v1.GeneratorNerfINR_freeze_NeRF
   diffaug: true
   gen_lr: 0.0001
   disc_lr: 0.0005

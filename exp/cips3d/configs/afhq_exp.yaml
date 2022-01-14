@@ -248,6 +248,24 @@ train_afhq_cat:
   load_finetune: false
   finetune_dir: "results/CIPS-3D/ffhq_exp/train_ffhq-20211231_221845_770/ckptdir/best_fid"
 
+train_afhq_cat_high:
+  base: train_afhq_cat
+  train_aux_img: false
+  D_cfg:
+    diffaug: true
+  G_cfg:
+    name: exp.cips3d.models.generator_v1.GeneratorNerfINR_freeze_NeRF
+  diffaug: true
+  gen_lr: 0.0001
+  disc_lr: 0.0005
+  warmup_D: true
+  fade_steps: 10000
+  img_size: 256
+  load_nerf_ema: true
+  load_finetune: true
+  finetune_dir: "results/CIPS-3D/afhq_exp/train_afhq_cat-20220113_210353_416/ckptdir/best_fid"
+
+
 
 eval_fid:
   base: train_ffhq
