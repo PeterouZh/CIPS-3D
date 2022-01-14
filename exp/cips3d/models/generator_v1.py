@@ -1983,6 +1983,9 @@ class GeneratorNerfINR_freeze_NeRF(GeneratorNerfINR):
     with torch.no_grad():
       style_dict.update(self.mapping_network_nerf(z_nerf))
     style_dict.update(self.mapping_network_inr(z_inr))
+
+    style_dict['nerf_rgb'] = self.nerf_rgb_mapping(style_dict['nerf_rgb'])
+
     return style_dict
 
   def points_forward(self,

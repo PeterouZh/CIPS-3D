@@ -32,7 +32,8 @@ def setup_evaluation(rank,
                      real_dir,
                      img_size,
                      num_imgs,
-                     del_fid_real_images):
+                     del_fid_real_images,
+                     shuffle=False):
   """
   Output real images.
 
@@ -63,7 +64,7 @@ def setup_evaluation(rank,
 
     batch_size = 64
     num_workers = 0
-    shuffle = False
+
     data_loader = get_training_dataloader(dataset=dataset, rank=rank, num_gpus=world_size,
                                           batch_size=batch_size, num_workers=num_workers, shuffle=shuffle)
     data_loader_iter = iter(data_loader)

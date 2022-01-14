@@ -515,7 +515,8 @@ def train(rank,
                        real_dir=f"{global_cfg.tl_outdir}/exp/fid/real",
                        img_size=global_cfg.img_size,
                        num_imgs=global_cfg.num_images_real_eval,
-                       del_fid_real_images=global_cfg.del_fid_real_images)
+                       del_fid_real_images=global_cfg.del_fid_real_images,
+                       shuffle=True)
       global_cfg.del_fid_real_images = False
       ddp_utils.d2_synchronize()
 

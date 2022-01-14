@@ -116,10 +116,29 @@ python scripts/dataset_tool.py \
 
 ## Training 
 
-```bash
 Please refer to the scripts in `exp/cips3d/bash`.
+I will release all the pre-trained models when the reproducing is over.
 
-```
+**running order:**
+
+- `exp/cips3d/bash/ffhq_exp:`
+    - `train_ffhq_r32.sh` -> `train_ffhq_r64.sh` -> `train_ffhq_r128.sh` -> `train_ffhq_r256.sh`
+    - `eval_fid.sh`
+
+- `exp/cips3d/bash/finetuning_exp:` (require pre-trained models from the above step)
+    - `finetune_photo2cartoon.sh` 
+
+**developing:**
+
+- `exp/cips3d/bash/ffhq_exp_v1:`
+
+- `exp/cips3d/bash/afhq_exp:`
+
+
+## Bug fixed
+
+- If the training process is blocked when training with multi GPUs, please upgrade the tl2 via `pip install -I tl2`
+
 
 <details>
 <summary>Old readme</summary>

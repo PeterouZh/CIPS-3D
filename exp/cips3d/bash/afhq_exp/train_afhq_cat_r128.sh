@@ -1,7 +1,7 @@
 set -x
 
 # v2
-# bash = bash CIPS-3D/exp/cips3d/bash/ffhq_exp_v1/train_ffhq_r64.sh 0 bucket-3690
+# bash = bash CIPS-3D/exp/cips3d/bash/afhq_exp/train_afhq_cat_r128.sh 0 bucket-3690
 
 # Env vars e.g.
 PROJ_NAME=CIPS-3D
@@ -62,13 +62,16 @@ export PORT=12345
 #
 export PYTHONPATH=.:./tl2_lib
 
-python -c "from exp.tests.test_cips3d import Testing_ffhq_exp_v1;\
-  Testing_ffhq_exp_v1().test_train_ffhq(debug=False)" \
+python -c "from exp.tests.test_cips3d import Testing_afhq_exp;\
+  Testing_afhq_exp().test_train_afhq_cat(debug=False)" \
   --tl_opts \
-    batch_size 4 img_size 64 total_iters 200000 \
+    batch_size 4 img_size 128 total_iters 15000 \
+    gen_lr 0.0001 disc_lr 0.001 \
     warmup_D True fade_steps 10000 \
-    train_aux_img True G_kwargs.num_steps 48 \
-    load_finetune False
+    train_aux_img False G_kwargs.num_steps 36 \
+    load_finetune True finetune_dir results/CIPS-3D/afhq_exp/train_afhq_cat-20220113_090159_613/ckptdir/best_fid
+#    load_finetune True finetune_dir results/CIPS-3D/ffhq_exp_v1/train_ffhq-20220111_034327_756/ckptdir/best_fid
+
 
 
 
