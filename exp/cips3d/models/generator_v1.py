@@ -1974,6 +1974,9 @@ class GeneratorNerfINR_freeze_NeRF(GeneratorNerfINR):
     ret = self.siren.load_state_dict(G_ema.siren.state_dict())
     ret = self.mapping_network_nerf.load_state_dict(G_ema.mapping_network_nerf.state_dict())
     ret = self.aux_to_rbg.load_state_dict(G_ema.aux_to_rbg.state_dict())
+
+    ret = self.mapping_network_inr.load_state_dict(G_ema.mapping_network_inr.state_dict())
+    ret = self.nerf_rgb_mapping.load_state_dict(G_ema.nerf_rgb_mapping.state_dict())
     pass
 
   def mapping_network(self,
@@ -1982,9 +1985,8 @@ class GeneratorNerfINR_freeze_NeRF(GeneratorNerfINR):
     style_dict = {}
     with torch.no_grad():
       style_dict.update(self.mapping_network_nerf(z_nerf))
-    style_dict.update(self.mapping_network_inr(z_inr))
-
-    style_dict['nerf_rgb'] = self.nerf_rgb_mapping(style_dict['nerf_rgb'])
+      style_dict.update(self.mapping_network_inr(z_inr))
+      style_dict['nerf_rgb'] = self.nerf_rgb_mapping(style_dict['nerf_rgb'])
 
     return style_dict
 

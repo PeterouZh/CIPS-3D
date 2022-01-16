@@ -65,10 +65,10 @@ export PYTHONPATH=.:./tl2_lib
 python -c "from exp.tests.test_cips3d import Testing_afhq_exp;\
   Testing_afhq_exp().test_train_afhq_cat(debug=False)" \
   --tl_opts \
-    batch_size 4 img_size 128 total_iters 15000 \
-    gen_lr 0.0001 disc_lr 0.001 \
+    batch_size 4 img_size 128 total_iters 100000 \
+    gen_lr 0.0001 disc_lr 0.001 r1_lambda 10. nerf_noise_disable True \
     warmup_D True fade_steps 10000 \
-    train_aux_img False G_kwargs.num_steps 36 \
+    train_aux_img True G_kwargs.num_steps 12 \
     load_finetune True finetune_dir results/CIPS-3D/afhq_exp/train_afhq_cat-20220113_090159_613/ckptdir/best_fid
 #    load_finetune True finetune_dir results/CIPS-3D/ffhq_exp_v1/train_ffhq-20220111_034327_756/ckptdir/best_fid
 

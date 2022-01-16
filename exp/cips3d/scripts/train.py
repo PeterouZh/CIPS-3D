@@ -307,6 +307,8 @@ def train(rank,
 
   summary_ddict = collections.defaultdict(dict)
 
+  nerf_noise_disable = global_cfg.get('nerf_noise_disable', False)
+
   for step in range(start_itr, global_cfg.total_iters):
     pbar.update()
     summary_ddict.clear()
@@ -319,7 +321,10 @@ def train(rank,
     generator_ddp.train()
     discriminator_ddp.train()
 
-    nerf_noise = max(0, 1. - state_dict['step'] / 5000.)
+    if nerf_noise_disable:
+      nerf_noise = 0.
+    else:
+      nerf_noise = max(0, 1. - state_dict['step'] / 5000.)
 
     if global_cfg.get('warmup_D', False):
       alpha = min(1, step / global_cfg.fade_steps)

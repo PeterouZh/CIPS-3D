@@ -1105,8 +1105,9 @@ class Testing_ffhq_exp_v1(unittest.TestCase):
     dd = eval(title)
     dd[f'{bucket_root}/results/CIPS-3D/ffhq_exp_v1/train_ffhq-20220109_174243_622'] = \
       {'20220109_174243_622-ffhq_r64-gpu.8x4-num_steps.12': f"{log_file}", }
-    dd[f'{bucket_root}/results/CIPS-3D/ffhq_exp_v1/train_ffhq-20220114_093931_594'] = \
-      {'20220114_093931_594-ffhq_r64-gpu.8x4-num_steps.48': f"{log_file}", }
+    # dd[f'{bucket_root}/results/CIPS-3D/ffhq_exp_v1/train_ffhq-20220114_093931_594'] = \
+    #   {'20220114_093931_594-ffhq_r64-gpu.8x4-num_steps.48': f"{log_file}", }
+
 
     dd['properties'] = {'title': title,
                         # 'xlim': [0, 3000000],
@@ -1121,6 +1122,8 @@ class Testing_ffhq_exp_v1(unittest.TestCase):
     dd = eval(title)
     dd[f'{bucket_root}/results/CIPS-3D/ffhq_exp_v1/train_ffhq-20220111_034327_756'] = \
       {'20220111_034327_756-ffhq_r128-gpu.8x4-aux.F-num_steps.12': f"{log_file}", }
+    dd[f'{bucket_root}/results/CIPS-3D/ffhq_exp_v1/train_ffhq-20220114_115800_280'] = \
+      {'20220114_115800_280-ffhq_r128-gpu.8x4-aux.F-num_steps.36': f"{log_file}", }
 
     dd['properties'] = {'title': title,
                         # 'xlim': [0, 3000000],
@@ -1509,6 +1512,10 @@ class Testing_afhq_exp(unittest.TestCase):
     #   {'20220112_151835_162-afhq_cat_r128-gpu.8x4-finetune.T-aux.F': f"{log_file}", }
     dd[f'{bucket_root}/results/CIPS-3D/afhq_exp/train_afhq_cat-20220113_210353_416'] = \
       {'20220113_210353_416-afhq_cat_r128-gpu.8x4-finetune.T-aux.F-num_steps.36': f"{log_file}", }
+    dd[f'{bucket_root}/results/CIPS-3D/afhq_exp/train_afhq_cat-20220114_185938_751'] = \
+      {'20220114_185938_751-afhq_cat_r128-aux.F-num_steps.24-nerf_noise_disable.T': f"{log_file}", }
+    dd[f'{bucket_root}/results/CIPS-3D/afhq_exp/train_afhq_cat-20220114_191837_314'] = \
+      {'20220114_191837_314-afhq_cat_r128-aux.T-num_steps.12-nerf_noise_disable.T': f"{log_file}", }
 
     dd['properties'] = {'title': title,
                         # 'xlim': [0, 3000000],
@@ -1521,8 +1528,16 @@ class Testing_afhq_exp(unittest.TestCase):
     title = 'FID_cat_r256'
     log_file = 'textdir/eval.ma0.FID.log'
     dd = eval(title)
-    dd[f'{bucket_root}/results/CIPS-3D/afhq_exp/train_afhq_cat_high-20220114_091445_392'] = \
-      {'20220114_091445_392-afhq_cat_r256-gpu.8x4-finetune.T-aux.F-num_steps.12': f"{log_file}", }
+    # dd[f'{bucket_root}/results/CIPS-3D/afhq_exp/train_afhq_cat_high-20220114_112900_020'] = \
+    #   {'20220114_112900_020-afhq_cat_r256-gpu.8x4-finetune.T-aux.F-num_steps.12': f"{log_file}", }
+    # dd[f'{bucket_root}/results/CIPS-3D/afhq_exp/train_afhq_cat_high-20220114_114448_735'] = \
+    #   {'20220114_114448_735-afhq_cat_r256-num_steps.24-R1.10-nerf_noise_disable.F': f"{log_file}", }
+    # dd[f'{bucket_root}/results/CIPS-3D/afhq_exp/train_afhq_cat_high-20220114_143143_586'] = \
+    #   {'20220114_143143_586-afhq_cat_r256-num_steps.24-R1.20-nerf_noise_disable.F': f"{log_file}", }
+    dd[f'{bucket_root}/results/CIPS-3D/afhq_exp/train_afhq_cat_high-20220114_144612_347'] = \
+      {'20220114_144612_347-afhq_cat_r256-num_steps.24-R1.20-nerf_noise_disable.T': f"{log_file}", }
+    dd[f'{bucket_root}/results/CIPS-3D/afhq_exp/train_afhq_cat_high-20220114_165819_026'] = \
+      {'20220114_165819_026-afhq_cat_r256-num_steps.24-R1.10-nerf_noise_disable.T': f"{log_file}", }
 
     dd['properties'] = {'title': title,
                         # 'xlim': [0, 3000000],
