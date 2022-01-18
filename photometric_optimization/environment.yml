@@ -108,7 +108,7 @@ dependencies:
   - pywavelets=1.1.1=py39h6323ea4_4
   - pyyaml=5.4.1=py39h3811e60_0
   - qt=5.9.7=h5867ecd_1
-  - readline=8.1.2=h7f8727e_0
+  # - readline=8.1.2=h7f8727e_0
   - scikit-image=0.18.3=py39h51133e4_0
   - scipy=1.7.3=py39hc147768_0
   - setuptools=58.0.4=py39h06a4308_0
