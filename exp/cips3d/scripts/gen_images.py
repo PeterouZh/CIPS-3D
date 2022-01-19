@@ -112,6 +112,7 @@ def main():
              img_size=global_cfg.img_size,
              batch_size=global_cfg.eval_batch_size)
 
+  print(f"Save images in {global_cfg.tl_outdir}/exp/fid/fake")
   pass
 
 

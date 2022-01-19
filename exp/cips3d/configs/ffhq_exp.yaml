@@ -126,7 +126,10 @@ _setup_evaluation:
 
 _gen_images:
   base: train_ffhq
-  network_pkl: cache_pretrained/cips3d/G_ema_ffhq.pth
+  num_images_gen_eval: 5000
+  img_size: 256
+#  network_pkl: cache_pretrained/cips3d/G_ema_ffhq.pth
+  network_pkl: "cache_pretrained/train_ffhq_high-20220105_143314_190/resume_iter_645500/G_ema.pth"
 
 _save_images:
   base: train_ffhq

@@ -134,6 +134,12 @@ I will release all the pre-trained models when the reproducing is over.
 
 - `exp/cips3d/bash/afhq_exp:`
 
+## Pre-trained checkpoints
+
+|   | ffhq_exp |
+|:---:|:---:|
+| ffhq_r256  | [train_ffhq_high-20220105_143314_190](https://github.com/PeterouZh/CIPS-3D/releases/download/v0.0.2/train_ffhq_high-20220105_143314_190.zip)  |
+
 
 ## Bug fixed
 

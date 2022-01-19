@@ -610,20 +610,17 @@ class Testing_ffhq_exp(unittest.TestCase):
         # export CUDA_VISIBLE_DEVICES=$cuda_devices
         # export RUN_NUM=$run_num
 
-        export CUDA_VISIBLE_DEVICES=0,1,2,3,4,5,6,7
+        export CUDA_VISIBLE_DEVICES=0,1
         export PORT=12345
-        export TIME_STR=1
-        export PYTHONPATH=.
-        python -c "from tl2.launch.tests.test_launch import Testing_Launch_v1;\
-          Testing_Launch_v1().test_launch_ddp(debug=False)" \
-          --tl_opts root_obs s3://$bucket/ZhouPeng/ \
-          --tl_outdir results/train_ffhq_256/train_ffhq_256-20210726_202423_412
-          # --tl_outdir results/$resume_dir
+        export TIME_STR=0
+        export PYTHONPATH=.:./tl2_lib
+        python -c "from exp.tests.test_cips3d import Testing_ffhq_exp;\
+          Testing_ffhq_exp().test__gen_images(debug=False)"
 
     :return:
     """
     if 'CUDA_VISIBLE_DEVICES' not in os.environ:
-      os.environ['CUDA_VISIBLE_DEVICES'] = '0,1'
+      os.environ['CUDA_VISIBLE_DEVICES'] = '1'
     if 'TIME_STR' not in os.environ:
       os.environ['TIME_STR'] = '0'
     if 'RUN_NUM' not in os.environ:
