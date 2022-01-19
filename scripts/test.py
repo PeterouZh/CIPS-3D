@@ -182,9 +182,9 @@ def main(outdir,
 def build_args():
   parser = argparser_utils.get_parser()
 
-  argparser_utils.add_argument_str(parser, name='outdir', default='results/model_interpolation')
+  argparser_utils.add_argument_str(parser, name='outdir', default='results/model')
   argparser_utils.add_argument_str(parser, name='cfg_file', default='configs/web_demo.yaml')
-  argparser_utils.add_argument_str(parser, name='command', default='model_interpolation')
+  argparser_utils.add_argument_str(parser, name='command', default='model')
   argparser_utils.add_argument_bool(parser, name='debug', default=False)
 
   args, _ = parser.parse_known_args()
