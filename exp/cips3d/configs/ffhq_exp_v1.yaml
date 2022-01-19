@@ -164,6 +164,7 @@ train_ffhq:
   grad_points: 256
   warmup_D: false
   fade_steps: 10000
+  nerf_noise_disable: false
   # log
   log_every: 10
   eval_every: 500
@@ -194,7 +195,8 @@ train_ffhq_high:
   img_size: 256
   load_nerf_ema: true
   load_finetune: true
-  finetune_dir: "results/CIPS-3D/ffhq_exp/train_ffhq-20220102_121420_779/ckptdir/best_fid"
+  nerf_noise_disable: true
+  finetune_dir: "results/CIPS-3D/ffhq_exp_v1/train_ffhq-20220111_034327_756/ckptdir/resume"
 
 
 
