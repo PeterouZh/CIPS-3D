@@ -50,8 +50,8 @@ class CIPS_3D_Demo(object):
     alpha_pi_div = st_utils.number_input('alpha_pi_div', cfg.alpha_pi_div, sidebar=True)
 
     # seed
-    seed = st_utils.get_seed(cfg.seeds_gallery)
-
+    # seed = st_utils.get_seed(cfg.seeds_gallery)
+    seed = 1
     # trajectory
     trajectory_mode = st_utils.selectbox('trajectory_mode', cfg.trajectory_mode, sidebar=True)
     forward_points = st_utils.number_input('forward_points', cfg.forward_points, sidebar=True)
