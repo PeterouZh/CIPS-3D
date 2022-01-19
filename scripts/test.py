@@ -118,8 +118,15 @@ class CIPS_3D_Demo(object):
     output_name = Path(f'seed_{seed}.mp4')
     video_f = cv2_utils.ImageioVideoWriter(f"{outdir}/{output_name}", fps=fps)
 
-    torch.manual_seed(seed)
-    zs = generator.get_zs(1)
+    # torch.manual_seed(seed)
+    # zs = generator.get_zs(1)
+    # shape=(1, 256)
+    # z = torch.randn((1, 256), device=device)
+
+    zs = {
+      'z_nerf': torch.randn((1, 256), device=device),
+      'z_inr': torch.randn((1, 512), device=device),
+    }
 
     with torch.no_grad():
       for idx in tqdm.tqdm(range(len(xyz))):
