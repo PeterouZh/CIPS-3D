@@ -143,4 +143,5 @@ dependencies:
     - numpy==1.20.3
     - opencv-python==4.5.5.62
     - pytorch3d==0.6.1
+    - face-alignment
 prefix: /home/uss00022/anaconda3/envs/pytorch3d

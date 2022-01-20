@@ -22,6 +22,7 @@ from FLAME import FLAME, FLAMETex
 from renderer import Renderer
 import util
 torch.backends.cudnn.benchmark = True
+from tl2.tl2_utils import read_image_list_from_files
 
 class PhotometricFitting(object):
     def __init__(self, config, device='cuda'):
@@ -250,9 +251,16 @@ class PhotometricFitting(object):
         np.save(f"{self.config.savefolder}/fckass.npy", single_params)
 
 if __name__ == "__main__":
-    image_path = "./test_images/69956.png"
+    # image_path = "./test_images/69956.png"
+    # img = imageio.imread(image_path)
+    image_list_file = '/nfs/STG/CodecAvatar/lelechen/FFHQ/ffhq-dataset/downsample_ffhq_256x256.zip'
+    image_list = read_image_list_from_files(image_list_file, compress=True)
+    print  (type(image_list))
+    image_path = image_list[0]
+
     img = imageio.imread(image_path)
-    
+
+
     config = {
         # FLAME
         'flame_model_path': '/home/uss00022/lelechen/basic/flame_data/data/generic_model.pkl',  # acquire it from FLAME project page
@@ -283,5 +291,8 @@ if __name__ == "__main__":
 
     config.batch_size = 1
     fitting = PhotometricFitting(config, device="cuda")
-    fitting.run(image_path)
+    print (len(image_list))
+    print  (image_list.keys())
+
+    # fitting.run(image_path)
     
