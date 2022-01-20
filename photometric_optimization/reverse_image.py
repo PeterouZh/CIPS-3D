@@ -26,6 +26,8 @@ from tl2.tl2_utils import read_image_list_from_files
 import zipfile
 import json
 import PIL.Image
+from typing import Callable, Optional, Tuple, Union
+
 #----------------------------------------------------------------------------
 
 def open_image_zip(source, *, max_images: Optional[int]):
