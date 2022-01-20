@@ -1576,6 +1576,20 @@ class Testing_afhq_exp(unittest.TestCase):
 
     bucket_root = "/home/ma-user/work/ZhouPeng/bucket_3690/"
 
+    FID_afhq_r64 = collections.defaultdict(dict)
+    title = 'FID_afhq_r64'
+    log_file = 'textdir/eval.ma0.FID.log'
+    dd = eval(title)
+    dd[f'{bucket_root}/results/CIPS-3D/afhq_exp/train_afhq-20220120_122125_662'] = \
+      {'20220120_122125_662-afhq_r64-gpu.8x4-finetune.F-aux.T-num_steps.48': f"{log_file}", }
+
+    dd['properties'] = {'title': title,
+                        # 'xlim': [0, 3000000],
+                        # 'ylim': [0, 50]
+                        }
+    default_dicts[title] = dd
+    show_max.append(False)
+
     FID_r128 = collections.defaultdict(dict)
     title = 'FID_r128'
     log_file = 'textdir/eval.ma0.FID.log'
@@ -1656,7 +1670,7 @@ class Testing_afhq_exp(unittest.TestCase):
       {'20220118_091548_726-afhq_cat_r256-aux.T-num_steps.12-R1.10-nerf_noise_disable.T': f"{log_file}", }
 
     dd['properties'] = {'title': title,
-                        'xlim': [0, 50000],
+                        'xlim': [0, 100000],
                         # 'ylim': [0, 50]
                         }
     default_dicts[title] = dd
@@ -1682,7 +1696,7 @@ class Testing_afhq_exp(unittest.TestCase):
         # export CUDA_VISIBLE_DEVICES=$cuda_devices
         # export RUN_NUM=$run_num
 
-        export CUDA_VISIBLE_DEVICES=0,1
+        export CUDA_VISIBLE_DEVICES=0
         export PORT=12345
         export TIME_STR=0
         export PYTHONPATH=.:./tl2_lib
