@@ -290,10 +290,10 @@ if __name__ == "__main__":
     # image_path = "./test_images/69956.png"
     # img = imageio.imread(image_path)
     image_list_file = '/nfs/STG/CodecAvatar/lelechen/FFHQ/ffhq-dataset/downsample_ffhq_256x256.zip'
-    with zipfile.ZipFile(image_list_file, mode='r') as z:
-        input_images = [str(f) for f in sorted(z.namelist()) if is_image_ext(f)]
-    print (input_images)
-    # max_id, image_list = open_image_zip(image_list_file, 2)
+    # with zipfile.ZipFile(image_list_file, mode='r') as z:
+    #     input_images = [str(f) for f in sorted(z.namelist()) if is_image_ext(f)]
+    # print (input_images)
+    image_list = read_image_list_from_files(image_list_file,compress=True)
     print  (type(image_list))
     image_path = image_list[0]
 
