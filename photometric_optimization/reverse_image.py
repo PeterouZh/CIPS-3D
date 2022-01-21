@@ -61,10 +61,10 @@ class PhotometricFitting(object):
         mesh_file = '/home/uss00022/lelechen/basic/flame_data/data/head_template_mesh.obj'
         self.render = Renderer(self.image_size, obj_filename=mesh_file).to(self.device)
 
-    def get_face_landmarks(self, image_path):
-        img = imageio.imread(image_path)
-        print (img.shape)
-        print (img,'=========')
+    def get_face_landmarks(self, img):
+        # img = imageio.imread(image_path)
+        # print (img.shape)
+        # print (img,'=========')
         preds = self.fa.get_landmarks(img)
         if len(preds) == 0:
             print("ERROR: no face detected!")
@@ -247,7 +247,7 @@ class PhotometricFitting(object):
         image_mask = image_mask.transpose(2, 0, 1)
         image_masks.append(torch.from_numpy(image_mask[None, :, :, :]).to(self.device))
 
-        landmark = self.get_face_landmarks(imagepath).astype(np.float32)
+        landmark = self.get_face_landmarks(img).astype(np.float32)
         landmark[:, 0] = landmark[:, 0] / float(image.shape[2]) * 2 - 1
         landmark[:, 1] = landmark[:, 1] / float(image.shape[1]) * 2 - 1
         landmarks.append(torch.from_numpy(landmark)[None, :, :].float().to(self.device))
