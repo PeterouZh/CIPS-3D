@@ -68,9 +68,10 @@ class PhotometricFitting(object):
             exit(1)
         return preds[0] # (68,2)
     
-    def get_front_face_mask(self, image_path):
+    def get_front_face_mask(self, img):
         with torch.no_grad():
-            img = Image.open(image_path)
+            img = Image.fromarray(img)
+            # img = Image.open(image_path)
             w, h = img.size
             image = img.resize((512, 512), Image.BILINEAR)
             print (image.size)
@@ -238,7 +239,7 @@ class PhotometricFitting(object):
         image = image.transpose(2, 0, 1)
         images.append(torch.from_numpy(image[None, :, :, :]).to(self.device))
         imagepath = '/nfs/STG/CodecAvatar/lelechen/FFHQ/ffhq-dataset/images1024x1024/00000/00000.png'
-        image_mask = self.get_front_face_mask(imagepath)
+        image_mask = self.get_front_face_mask(img)
         image_mask = image_mask[..., None].astype('float32')
         image_mask = image_mask.transpose(2, 0, 1)
         image_masks.append(torch.from_numpy(image_mask[None, :, :, :]).to(self.device))
