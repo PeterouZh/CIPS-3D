@@ -53,7 +53,7 @@ class PhotometricFitting(object):
         self.parse_net.eval()
         self.to_tensor = transforms.Compose([
             transforms.ToTensor(),
-            transforms.Normalize((0.485, 0.456, 0.406), (0.229, 0.224, 0.225)),
+            # transforms.Normalize((0.485, 0.456, 0.406), (0.229, 0.224, 0.225)),
         ])
         self.frontal_regions = [1, 2, 3, 4, 5, 10, 12, 13]
 
@@ -73,9 +73,9 @@ class PhotometricFitting(object):
             img = Image.open(image_path)
             w, h = img.size
             image = img.resize((512, 512), Image.BILINEAR)
-            print (image, '!!!!!!!!!!!!!')
-            print (image.shape)
+            print (image.size)
             img = self.to_tensor(image)
+            print (img)
             img = torch.unsqueeze(img, 0)
             img = img.cuda()
             out = self.parse_net(img)[0]
@@ -300,26 +300,6 @@ if __name__ == "__main__":
     num_files, input_iter = open_image_zip(image_list_file, max_images=8)
     pbar = tqdm(enumerate(input_iter), total=num_files)
     for idx, image in pbar:
-        # img = image['img'].astype(np.float32) / 255.
-        # img = img.transpose(2, 0, 1)
-        # print (img)
-
-        # imagepath = root + '/images1024x1024/' + image['label']
-        # print (imagepath)
-        # img = cv2.imread(imagepath)
-        
-        # img = cv2.resize(img, (256,256), interpolation = cv2.INTER_AREA)
-        
-        # img = img.astype(np.float32) / 255.
-        # img = img[:, :, [2, 1, 0]].transpose(2, 0, 1)
-        # print (img,'+++')
-
-
-    
-    # image_path = input_images[0]
-    # gg = read_image_list_from_files(image_list_file)
-    # print (gg)
-    # img = imageio.imread(image_path)
         print (image['img'],'======')
         fitting.run(image['img'])
         print (gg)
