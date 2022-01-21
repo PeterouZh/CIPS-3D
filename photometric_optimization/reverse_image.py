@@ -62,7 +62,10 @@ class PhotometricFitting(object):
         self.render = Renderer(self.image_size, obj_filename=mesh_file).to(self.device)
 
     def get_face_landmarks(self, image_path):
-        preds = self.fa.get_landmarks(imageio.imread(image_path))
+        img = imageio.imread(image_path)
+        print (img.shape)
+        print (img,'=========')
+        preds = self.fa.get_landmarks(img)
         if len(preds) == 0:
             print("ERROR: no face detected!")
             exit(1)
