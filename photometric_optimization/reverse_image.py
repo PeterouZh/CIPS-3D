@@ -25,6 +25,7 @@ torch.backends.cudnn.benchmark = True
 from tl2.tl2_utils import read_image_list_from_files
 sys.path.append('../scripts/')
 from dataset_tool import *
+import argparse
 
 #----------------------------------------------------------------------------
 
@@ -264,6 +265,17 @@ class PhotometricFitting(object):
 
         # np.save(f"{vis_folder}/flame_p.npy", single_params)
         return single_params
+
+
+def parse_args():
+    parser = argparse.ArgumentParser()
+
+    parser.add_argument("--k",
+                     type=int,
+                     default=0)
+
+
+
 if __name__ == "__main__":
     # image_path = "./test_images/69956.png"
     # img = imageio.imread(image_path)
@@ -301,10 +313,10 @@ if __name__ == "__main__":
  
 
     root = '/nfs/STG/CodecAvatar/lelechen/FFHQ/ffhq-dataset'
-    image_list_file = '/nfs/STG/CodecAvatar/lelechen/FFHQ/ffhq-dataset/downsample_ffhq_256x256_tmp.zip'
+    image_list_file = '/nfs/STG/CodecAvatar/lelechen/FFHQ/ffhq-dataset/downsample_ffhq_256x256.zip'
 
     num_files, input_iter = open_image_zip(image_list_file,max_images = None)
-    k = 0
+    k =  parse_args().k
     
     pbar = tqdm(enumerate(input_iter), total=num_files)
     for idx, image in pbar:
@@ -312,9 +324,7 @@ if __name__ == "__main__":
             try:
                 util.check_mkdir(config.savefolder + image['label'][:-4])
                 params = fitting.run(image['img'], vis_folder = config.savefolder + image['label'][:-4])
-                # paramsets[image['label'][:-4]] = params
-            # if idx == 1:
-            #     break
+                
             except:
                 print (idx, image['label'])
                 continue 
