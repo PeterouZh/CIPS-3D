@@ -259,7 +259,7 @@ class PhotometricFitting(object):
         #                      vertices=torch.from_numpy(single_params['verts'][0]).to(self.device),
         #                      textures=torch.from_numpy(single_params['albedos'][0]).to(self.device)
         #                      )
-        # np.save(f"{vis_folder}/fckass.npy", single_params)
+        np.save(f"{vis_folder}/fckass.npy", single_params)
         return single_params
 if __name__ == "__main__":
     # image_path = "./test_images/69956.png"
@@ -281,7 +281,7 @@ if __name__ == "__main__":
         'image_size': 256,
         'e_lr': 0.005,
         'e_wd': 0.0001,
-        'savefolder': './fckass/',
+        'savefolder': '/nfs/STG/CodecAvatar/lelechen/FFHQ/ffhq-dataset/flame/',
         # weights of losses and reg terms
         'w_pho': 8,
         'w_lmks': 1,
@@ -305,16 +305,17 @@ if __name__ == "__main__":
     for idx, image in pbar:
         try:
             util.check_mkdir(config.savefolder + image['label'])
-            params = fitting.run(image['img'], vis_folder = config.savefolder + image['label'])
-            paramsets[image['label']] = params
+            params = fitting.run(image['img'], vis_folder = config.savefolder + image['label'][:-4])
+            paramsets[image['label'][:-4]] = params
         # if idx == 1:
         #     break
         except:
             print (idx, image['label'])
+            continue 
     
     with open('/nfs/STG/CodecAvatar/lelechen/FFHQ/ffhq-dataset/flame_p.pickle', 'wb') as handle:
         pickle.dump(paramsets, handle, protocol=pickle.HIGHEST_PROTOCOL)
     
-    # with open('/nfs/STG/CodecAvatar/lelechen/FFHQ/ffhq-dataset/flame_p.pickle', 'rb') as handle:
-    #     b = pickle.load(handle)
-    # print (b)
+    with open('/nfs/STG/CodecAvatar/lelechen/FFHQ/ffhq-dataset/flame_p.pickle', 'rb') as handle:
+        b = pickle.load(handle)
+    print (b)
