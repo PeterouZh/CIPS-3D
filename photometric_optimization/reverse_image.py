@@ -313,7 +313,7 @@ if __name__ == "__main__":
  
 
     root = '/nfs/STG/CodecAvatar/lelechen/FFHQ/ffhq-dataset'
-    image_list_file = '/nfs/STG/CodecAvatar/lelechen/FFHQ/ffhq-dataset/downsample_ffhq_256x256_tmp.zip'
+    image_list_file = '/nfs/STG/CodecAvatar/lelechen/FFHQ/ffhq-dataset/downsample_ffhq_256x256.zip'
 
     num_files, input_iter = open_image_zip(image_list_file,max_images = None)
     k =  parse_args().k
