@@ -26,7 +26,7 @@ def dict2obj(d):
 
 def check_mkdir(path):
     if not os.path.exists(path):
-        print('making %s' % path)
+        # print('making %s' % path)
         os.makedirs(path)
 
 
