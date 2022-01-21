@@ -268,7 +268,7 @@ if __name__ == "__main__":
         print (image)
         print (image.keys())
         print (image['img'].shape)
-        imagepath = root + '/' + image['label']
+        imagepath = root + '/images1024x1024/' + image['label']
         print (imagepath)
         image = cv2.imread(imagepath)
         print (image.shape,"+++++")
