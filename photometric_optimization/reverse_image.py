@@ -272,6 +272,8 @@ if __name__ == "__main__":
         print (imagepath)
         image = cv2.imread(imagepath)
         print (image.shape,"+++++")
+        image = cv2.resize(image, (256,256), interpolation = cv2.INTER_AREA)
+        print (image)
         image = image.astype(np.float32) / 255.
         image = image[:, :, [2, 1, 0]].transpose(2, 0, 1)
 
