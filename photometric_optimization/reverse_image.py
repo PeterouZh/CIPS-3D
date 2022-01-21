@@ -23,39 +23,8 @@ from renderer import Renderer
 import util
 torch.backends.cudnn.benchmark = True
 from tl2.tl2_utils import read_image_list_from_files
-import zipfile
-import json
-import PIL.Image
-from typing import Callable, Optional, Tuple, Union
-from tqdm import tqdm
-#----------------------------------------------------------------------------
-
-def open_image_zip(source, *, max_images: Optional[int]):
-    with zipfile.ZipFile(source, mode='r') as z:
-        input_images = [str(f) for f in sorted(z.namelist()) if is_image_ext(f)]
-
-        # Load labels.
-        labels = {}
-        if 'dataset.json' in z.namelist():
-            with z.open('dataset.json', 'r') as file:
-                labels = json.load(file)['labels']
-                if labels is not None:
-                    labels = { x[0]: x[1] for x in labels }
-                else:
-                    labels = {}
-
-    max_idx = maybe_min(len(input_images), max_images)
-
-    def iterate_images():
-        with zipfile.ZipFile(source, mode='r') as z:
-            for idx, fname in enumerate(input_images):
-                with z.open(fname, 'r') as file:
-                    img = PIL.Image.open(file) # type: ignore
-                    img = np.array(img)
-                yield dict(img=img, label=labels.get(fname))
-                if idx >= max_idx-1:
-                    break
-    return max_idx, iterate_images()
+sys.path.append('../scripts/')
+form dataset_tool import *
 
 #----------------------------------------------------------------------------
 
@@ -290,17 +259,17 @@ if __name__ == "__main__":
     # image_path = "./test_images/69956.png"
     # img = imageio.imread(image_path)
     image_list_file = '/nfs/STG/CodecAvatar/lelechen/FFHQ/ffhq-dataset/downsample_ffhq_256x256_tmp.zip'
-    # num_files, input_iter = open_image_zip(image_list_file, max_images=8)
-    #     # input_images = [str(f) for f in sorted(z.namelist()) if is_image_ext(f)]
-    # pbar = tqdm(enumerate(input_iter), total=num_files)
-    # for idx, image in pbar:
-    #     print (type(image))
-    #     print (image)
-    #     print (image.keys())
+    num_files, input_iter = open_image_zip(image_list_file, max_images=8)
+        # input_images = [str(f) for f in sorted(z.namelist()) if is_image_ext(f)]
+    pbar = tqdm(enumerate(input_iter), total=num_files)
+    for idx, image in pbar:
+        print (type(image))
+        print (image)
+        print (image.keys())
     
     # image_path = input_images[0]
-    gg = read_image_list_from_files(image_list_file)
-    print (gg)
+    # gg = read_image_list_from_files(image_list_file)
+    # print (gg)
     img = imageio.imread(image_path)
 
 
