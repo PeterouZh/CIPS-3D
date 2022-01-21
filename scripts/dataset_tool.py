@@ -532,6 +532,7 @@ def convert_dataset(
                 img.save(image_bits, format='png', compress_level=0, optimize=False)
         saved_path = os.path.join(archive_root_dir, archive_fname)
         save_bytes(saved_path, image_bits.getbuffer())
+        print (image['label'], '!!!!')
         labels.append([archive_fname, image['label']] if image['label'] is not None else None)
 
     metadata = {
