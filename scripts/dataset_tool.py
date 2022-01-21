@@ -72,6 +72,8 @@ def open_image_folder(source_dir, *, max_images: Optional[int]):
             arch_fname = os.path.relpath(fname, source_dir)
             arch_fname = arch_fname.replace('\\', '/')
             img = np.array(PIL.Image.open(fname).convert('RGB'))
+            print (arch_fname,'++++')
+            print (labels.get(arch_fname))
             yield dict(img=img, label=labels.get(arch_fname))
             if idx >= max_idx-1:
                 break
@@ -483,7 +485,7 @@ def convert_dataset(
     labels = []
     pbar = tqdm(enumerate(input_iter), total=num_files)
     for idx, image in pbar:
-        print (image['label'], '!!!!')
+        
         if debug and idx >= 10:
             break
 
