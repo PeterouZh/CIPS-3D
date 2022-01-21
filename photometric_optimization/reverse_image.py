@@ -264,19 +264,19 @@ if __name__ == "__main__":
         # input_images = [str(f) for f in sorted(z.namelist()) if is_image_ext(f)]
     pbar = tqdm(enumerate(input_iter), total=num_files)
     for idx, image in pbar:
-        print (type(image))
+        image = image['img'].astype(np.float32) / 255.
+        image = image.transpose(2, 0, 1)
         print (image)
-        print (image.keys())
-        print (image['img'].shape)
+
         imagepath = root + '/images1024x1024/' + image['label']
         print (imagepath)
         image = cv2.imread(imagepath)
-        print (image.shape,"+++++")
+        
         image = cv2.resize(image, (256,256), interpolation = cv2.INTER_AREA)
-        print (image)
+        
         image = image.astype(np.float32) / 255.
         image = image[:, :, [2, 1, 0]].transpose(2, 0, 1)
-
+        print (image,'+++')
 
 
     
