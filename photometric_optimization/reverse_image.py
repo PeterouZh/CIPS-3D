@@ -77,9 +77,7 @@ class PhotometricFitting(object):
             # img = Image.open(image_path)
             w, h = img.size
             image = img.resize((512, 512), Image.BILINEAR)
-            print (image.size)
             img = self.to_tensor(image)
-            print (img)
             img = torch.unsqueeze(img, 0)
             img = img.cuda()
             out = self.parse_net(img)[0]
@@ -195,7 +193,7 @@ class PhotometricFitting(object):
                 print(loss_info)
 
             # visualize
-            if k % 10 == 0:
+            if k % 333 == 0:
                 grids = {}
                 visind = range(bz)  # [0]
                 grids['images'] = torchvision.utils.make_grid(images[visind]).detach().cpu()
@@ -229,7 +227,7 @@ class PhotometricFitting(object):
         }
         return single_params
 
-    def run(self, img):
+    def run(self, img, vis_folder ):
         # The implementation is potentially able to optimize with images(batch_size>1),
         # here we show the example with a single image fitting
         images = []
@@ -256,12 +254,12 @@ class PhotometricFitting(object):
         image_masks = torch.cat(image_masks, dim=0)
         landmarks = torch.cat(landmarks, dim=0)
         # optimize
-        single_params = self.optimize(images, landmarks, image_masks, savefolder=self.config.savefolder)
+        single_params = self.optimize(images, landmarks, image_masks, savefolder= vis_folder)
         # self.render.save_obj(filename=savefile[:-4]+'.obj',
         #                      vertices=torch.from_numpy(single_params['verts'][0]).to(self.device),
         #                      textures=torch.from_numpy(single_params['albedos'][0]).to(self.device)
         #                      )
-        np.save(f"{self.config.savefolder}/fckass.npy", single_params)
+        np.save(f"{vis_folder}/fckass.npy", single_params)
 
 if __name__ == "__main__":
     # image_path = "./test_images/69956.png"
@@ -305,7 +303,5 @@ if __name__ == "__main__":
     pbar = tqdm(enumerate(input_iter), total=num_files)
     for idx, image in pbar:
         util.check_mkdir(config.savefolder + image['label'])
-        print (image['img'],'======')
-        fitting.run(image['img'])
-        # print (gg)
+        fitting.run(image['img'], vis_folder = config.savefolder + image['label'])
     
