@@ -304,21 +304,21 @@ if __name__ == "__main__":
     image_list_file = '/nfs/STG/CodecAvatar/lelechen/FFHQ/ffhq-dataset/downsample_ffhq_256x256_tmp.zip'
     num_files, input_iter = open_image_zip(image_list_file, max_images=8)
     pbar = tqdm(enumerate(input_iter), total=num_files)
-    paramsets = {}
+    # paramsets = {}
     for idx, image in pbar:
         try:
             util.check_mkdir(config.savefolder + image['label'][:-4])
             params = fitting.run(image['img'], vis_folder = config.savefolder + image['label'][:-4])
-            paramsets[image['label'][:-4]] = params
+            # paramsets[image['label'][:-4]] = params
         # if idx == 1:
         #     break
         except:
             print (idx, image['label'])
             continue 
-    print (paramsets)
-    # with open('/nfs/STG   /CodecAvatar/lelechen/FFHQ/ffhq-dataset/flame_p.pickle', 'wb') as handle:
-    #     pickle.dump(paramsets, handle, protocol=pickle.HIGHEST_PROTOCOL)
+    # print (paramsets)
+    # # with open('/nfs/STG   /CodecAvatar/lelechen/FFHQ/ffhq-dataset/flame_p.pickle', 'wb') as handle:
+    # #     pickle.dump(paramsets, handle, protocol=pickle.HIGHEST_PROTOCOL)
     
     # with open('/nfs/STG/CodecAvatar/lelechen/FFHQ/ffhq-dataset/flame_p.pickle', 'rb') as handle:
     #     b = pickle.load(handle)
-    # print (b)
+    # # print (b)
