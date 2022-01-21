@@ -1590,6 +1590,20 @@ class Testing_afhq_exp(unittest.TestCase):
     default_dicts[title] = dd
     show_max.append(False)
 
+    FID_afhq_r128 = collections.defaultdict(dict)
+    title = 'FID_afhq_r128'
+    log_file = 'textdir/eval.ma0.FID.log'
+    dd = eval(title)
+    dd[f'{bucket_root}/results/CIPS-3D/afhq_exp/train_afhq-20220121_090048_760'] = \
+      {'20220121_090048_760-afhq_r128-gpu.8x4-finetune.F-aux.T-num_steps.24': f"{log_file}", }
+
+    dd['properties'] = {'title': title,
+                        # 'xlim': [0, 3000000],
+                        # 'ylim': [0, 50]
+                        }
+    default_dicts[title] = dd
+    show_max.append(False)
+
     FID_r128 = collections.defaultdict(dict)
     title = 'FID_r128'
     log_file = 'textdir/eval.ma0.FID.log'
@@ -1670,7 +1684,7 @@ class Testing_afhq_exp(unittest.TestCase):
       {'20220118_091548_726-afhq_cat_r256-aux.T-num_steps.12-R1.10-nerf_noise_disable.T': f"{log_file}", }
 
     dd['properties'] = {'title': title,
-                        'xlim': [0, 100000],
+                        'xlim': [0, 300000],
                         # 'ylim': [0, 50]
                         }
     default_dicts[title] = dd
