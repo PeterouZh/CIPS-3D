@@ -307,16 +307,17 @@ if __name__ == "__main__":
 
     config = util.dict2obj(config)
     
-
+    k =  parse_args().k
+    gpuid = k % 7
     config.batch_size = 1
-    fitting = PhotometricFitting(config, device="cuda")
+    fitting = PhotometricFitting(config, device="cuda:{%d}"%gpuid)
  
 
     root = '/nfs/STG/CodecAvatar/lelechen/FFHQ/ffhq-dataset'
-    image_list_file = '/nfs/STG/CodecAvatar/lelechen/FFHQ/ffhq-dataset/downsample_ffhq_256x256.zip'
+    image_list_file = '/nfs/STG/CodecAvatar/lelechen/FFHQ/ffhq-dataset/downsample_ffhq_256x256_tmp.zip'
 
     num_files, input_iter = open_image_zip(image_list_file,max_images = None)
-    k =  parse_args().k
+    
     
     pbar = tqdm(enumerate(input_iter), total=num_files)
     for idx, image in pbar:
