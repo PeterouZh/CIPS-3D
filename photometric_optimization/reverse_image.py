@@ -73,6 +73,8 @@ class PhotometricFitting(object):
             img = Image.open(image_path)
             w, h = img.size
             image = img.resize((512, 512), Image.BILINEAR)
+            print (image, '!!!!!!!!!!!!!')
+            print (image.shape)
             img = self.to_tensor(image)
             img = torch.unsqueeze(img, 0)
             img = img.cuda()
@@ -223,17 +225,19 @@ class PhotometricFitting(object):
         }
         return single_params
 
-    def run(self, imagepath):
+    def run(self, img):
         # The implementation is potentially able to optimize with images(batch_size>1),
         # here we show the example with a single image fitting
         images = []
         landmarks = []
         image_masks = []
 
-        image = cv2.imread(imagepath).astype(np.float32) / 255.
-        image = image[:, :, [2, 1, 0]].transpose(2, 0, 1)
+        # image = cv2.imread(imagepath).astype(np.float32) / 255.
+        # image = image[:, :, [2, 1, 0]].transpose(2, 0, 1)
+        image = img.astype(np.float32) / 255.
+        image = image.transpose(2, 0, 1)
         images.append(torch.from_numpy(image[None, :, :, :]).to(self.device))
-
+        imagepath = '/nfs/STG/CodecAvatar/lelechen/FFHQ/ffhq-dataset/images1024x1024/00000/00000.png'
         image_mask = self.get_front_face_mask(imagepath)
         image_mask = image_mask[..., None].astype('float32')
         image_mask = image_mask.transpose(2, 0, 1)
@@ -258,33 +262,6 @@ class PhotometricFitting(object):
 if __name__ == "__main__":
     # image_path = "./test_images/69956.png"
     # img = imageio.imread(image_path)
-    root = '/nfs/STG/CodecAvatar/lelechen/FFHQ/ffhq-dataset'
-    image_list_file = '/nfs/STG/CodecAvatar/lelechen/FFHQ/ffhq-dataset/downsample_ffhq_256x256_tmp.zip'
-    num_files, input_iter = open_image_zip(image_list_file, max_images=8)
-        # input_images = [str(f) for f in sorted(z.namelist()) if is_image_ext(f)]
-    pbar = tqdm(enumerate(input_iter), total=num_files)
-    for idx, image in pbar:
-        img = image['img'].astype(np.float32) / 255.
-        img = img.transpose(2, 0, 1)
-        print (img)
-
-        imagepath = root + '/images1024x1024/' + image['label']
-        print (imagepath)
-        img = cv2.imread(imagepath)
-        
-        img = cv2.resize(img, (256,256), interpolation = cv2.INTER_AREA)
-        
-        img = img.astype(np.float32) / 255.
-        img = img[:, :, [2, 1, 0]].transpose(2, 0, 1)
-        print (img,'+++')
-
-
-    
-    # image_path = input_images[0]
-    # gg = read_image_list_from_files(image_list_file)
-    # print (gg)
-    img = imageio.imread(image_path)
-
 
     config = {
         # FLAME
@@ -299,7 +276,7 @@ if __name__ == "__main__":
         'use_face_contour': True,
 
         'batch_size': 1,
-        'image_size': img.shape[0],
+        'image_size': 256,
         'e_lr': 0.005,
         'e_wd': 0.0001,
         'savefolder': './fckass/',
@@ -316,8 +293,34 @@ if __name__ == "__main__":
 
     config.batch_size = 1
     fitting = PhotometricFitting(config, device="cuda")
-    print (len(image_list))
-    print  (image_list.keys())
+ 
 
-    # fitting.run(image_path)
+    root = '/nfs/STG/CodecAvatar/lelechen/FFHQ/ffhq-dataset'
+    image_list_file = '/nfs/STG/CodecAvatar/lelechen/FFHQ/ffhq-dataset/downsample_ffhq_256x256_tmp.zip'
+    num_files, input_iter = open_image_zip(image_list_file, max_images=8)
+    pbar = tqdm(enumerate(input_iter), total=num_files)
+    for idx, image in pbar:
+        # img = image['img'].astype(np.float32) / 255.
+        # img = img.transpose(2, 0, 1)
+        # print (img)
+
+        # imagepath = root + '/images1024x1024/' + image['label']
+        # print (imagepath)
+        # img = cv2.imread(imagepath)
+        
+        # img = cv2.resize(img, (256,256), interpolation = cv2.INTER_AREA)
+        
+        # img = img.astype(np.float32) / 255.
+        # img = img[:, :, [2, 1, 0]].transpose(2, 0, 1)
+        # print (img,'+++')
+
+
+    
+    # image_path = input_images[0]
+    # gg = read_image_list_from_files(image_list_file)
+    # print (gg)
+    # img = imageio.imread(image_path)
+        print (image['img'],'======')
+        fitting.run(image['img'])
+        print (gg)
     
