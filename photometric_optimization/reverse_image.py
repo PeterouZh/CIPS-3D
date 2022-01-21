@@ -275,7 +275,7 @@ def parse_args():
                      default=0)
 
 
-
+tmp = parse_args()
 if __name__ == "__main__":
     # image_path = "./test_images/69956.png"
     # img = imageio.imread(image_path)
@@ -316,7 +316,7 @@ if __name__ == "__main__":
     image_list_file = '/nfs/STG/CodecAvatar/lelechen/FFHQ/ffhq-dataset/downsample_ffhq_256x256_tmp.zip'
 
     num_files, input_iter = open_image_zip(image_list_file,max_images = None)
-    tmp = parse_args()
+    
     k =  tmp.k
     
     pbar = tqdm(enumerate(input_iter), total=num_files)
