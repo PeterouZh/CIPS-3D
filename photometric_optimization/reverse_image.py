@@ -309,7 +309,7 @@ if __name__ == "__main__":
     
     k =  parse_args().k
     # gpuid = k % 7
-    gpuid = 7
+    gpuid = 6
     config.batch_size = 1
     fitting = PhotometricFitting(config, device="cuda:%d"%gpuid)
     
@@ -335,6 +335,6 @@ if __name__ == "__main__":
     # # with open('/nfs/STG   /CodecAvatar/lelechen/FFHQ/ffhq-dataset/flame_p.pickle', 'wb') as handle:
     # #     pickle.dump(paramsets, handle, protocol=pickle.HIGHEST_PROTOCOL)
     
-    # with open('/nfs/STG/CodecAvatar/lelechen/FFHQ/ffhq-dataset/flame_p.pickle', 'rb') as handle:
+    # with open('/nfs/STG/CodecAvatar/lelechen/FFHQ/ffhq-dataset/fldame_p.pickle', 'rb') as handle:
     #     b = pickle.load(handle)
     # # print (b)
