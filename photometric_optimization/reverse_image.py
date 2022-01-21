@@ -141,7 +141,7 @@ class PhotometricFitting(object):
             if k % 10 == 0:
                 print(loss_info)
 
-            if k % 10 == 0:
+            if k % 333 == 0:
                 grids = {}
                 visind = range(bz)  # [0]
                 grids['images'] = torchvision.utils.make_grid(images[visind]).detach().cpu()
@@ -241,7 +241,7 @@ class PhotometricFitting(object):
         image = img.astype(np.float32) / 255.
         image = image.transpose(2, 0, 1)
         images.append(torch.from_numpy(image[None, :, :, :]).to(self.device))
-        imagepath = '/nfs/STG/CodecAvatar/lelechen/FFHQ/ffhq-dataset/images1024x1024/00000/00000.png'
+        # imagepath = '/nfs/STG/CodecAvatar/lelechen/FFHQ/ffhq-dataset/images1024x1024/00000/00000.png'
         image_mask = self.get_front_face_mask(img)
         image_mask = image_mask[..., None].astype('float32')
         image_mask = image_mask.transpose(2, 0, 1)
@@ -293,7 +293,7 @@ if __name__ == "__main__":
     }
 
     config = util.dict2obj(config)
-    util.check_mkdir(config.savefolder)
+    
 
     config.batch_size = 1
     fitting = PhotometricFitting(config, device="cuda")
@@ -304,7 +304,8 @@ if __name__ == "__main__":
     num_files, input_iter = open_image_zip(image_list_file, max_images=8)
     pbar = tqdm(enumerate(input_iter), total=num_files)
     for idx, image in pbar:
+        util.check_mkdir(config.savefolder + image['label'])
         print (image['img'],'======')
         fitting.run(image['img'])
-        print (gg)
+        # print (gg)
     
