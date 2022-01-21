@@ -136,10 +136,10 @@ class PhotometricFitting(object):
             loss_info = '----iter: {}, time: {}\n'.format(k, datetime.datetime.now().strftime('%Y-%m-%d-%H:%M:%S'))
             for key in losses.keys():
                 loss_info = loss_info + '{}: {}, '.format(key, float(losses[key]))
-            if k % 10 == 0:
-                print(loss_info)
+            # if k % 10 == 0:
+            #     print(loss_info)
 
-            if k % 333 == 0:
+            if k % 999 == 0:
                 grids = {}
                 visind = range(bz)  # [0]
                 grids['images'] = torchvision.utils.make_grid(images[visind]).detach().cpu()
@@ -189,11 +189,11 @@ class PhotometricFitting(object):
             for key in losses.keys():
                 loss_info = loss_info + '{}: {}, '.format(key, float(losses[key]))
 
-            if k % 10 == 0:
-                print(loss_info)
+            # if k % 10 == 0:
+            #     print(loss_info)
 
             # visualize
-            if k % 333 == 0:
+            if k % 999 == 0:
                 grids = {}
                 visind = range(bz)  # [0]
                 grids['images'] = torchvision.utils.make_grid(images[visind]).detach().cpu()
@@ -303,11 +303,14 @@ if __name__ == "__main__":
     pbar = tqdm(enumerate(input_iter), total=num_files)
     paramsets = {}
     for idx, image in pbar:
-        util.check_mkdir(config.savefolder + image['label'])
-        params = fitting.run(image['img'], vis_folder = config.savefolder + image['label'])
-        paramsets[image['label']] = params
-        if idx == 1:
-            break
+        try:
+            util.check_mkdir(config.savefolder + image['label'])
+            params = fitting.run(image['img'], vis_folder = config.savefolder + image['label'])
+            paramsets[image['label']] = params
+        # if idx == 1:
+        #     break
+        except:
+            print (idx, image['label'])
     
     with open('/nfs/STG/CodecAvatar/lelechen/FFHQ/ffhq-dataset/flame_p.pickle', 'wb') as handle:
         pickle.dump(paramsets, handle, protocol=pickle.HIGHEST_PROTOCOL)
