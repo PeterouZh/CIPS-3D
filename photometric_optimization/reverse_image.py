@@ -312,6 +312,6 @@ if __name__ == "__main__":
     with open('/nfs/STG/CodecAvatar/lelechen/FFHQ/ffhq-dataset/flame_p.pickle', 'wb') as handle:
         pickle.dump(paramsets, handle, protocol=pickle.HIGHEST_PROTOCOL)
     
-    with open('/nfs/STG/CodecAvatar/lelechen/FFHQ/ffhq-dataset/flame_p.pickle', 'rb') as handle:
-        b = pickle.load(handle)
-    print (b)
+    # with open('/nfs/STG/CodecAvatar/lelechen/FFHQ/ffhq-dataset/flame_p.pickle', 'rb') as handle:
+    #     b = pickle.load(handle)
+    # print (b)
