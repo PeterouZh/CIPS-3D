@@ -310,7 +310,7 @@ if __name__ == "__main__":
     k =  parse_args().k
     gpuid = k % 7
     config.batch_size = 1
-    fitting = PhotometricFitting(config, device="cuda:{%d}"%gpuid)
+    fitting = PhotometricFitting(config, device="cuda:%d"%gpuid)
  
 
     root = '/nfs/STG/CodecAvatar/lelechen/FFHQ/ffhq-dataset'
