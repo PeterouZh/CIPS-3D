@@ -259,7 +259,7 @@ class PhotometricFitting(object):
         #                      vertices=torch.from_numpy(single_params['verts'][0]).to(self.device),
         #                      textures=torch.from_numpy(single_params['albedos'][0]).to(self.device)
         #                      )
-        np.save(f"{vis_folder}/fckass.npy", single_params)
+        np.save(f"{vis_folder}/flame_p.npy", single_params)
         return single_params
 if __name__ == "__main__":
     # image_path = "./test_images/69956.png"
@@ -304,7 +304,7 @@ if __name__ == "__main__":
     paramsets = {}
     for idx, image in pbar:
         try:
-            util.check_mkdir(config.savefolder + image['label'])
+            util.check_mkdir(config.savefolder + image['label'][:-4])
             params = fitting.run(image['img'], vis_folder = config.savefolder + image['label'][:-4])
             paramsets[image['label'][:-4]] = params
         # if idx == 1:
