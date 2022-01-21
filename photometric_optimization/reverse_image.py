@@ -303,6 +303,8 @@ if __name__ == "__main__":
     root = '/nfs/STG/CodecAvatar/lelechen/FFHQ/ffhq-dataset'
     image_list_file = '/nfs/STG/CodecAvatar/lelechen/FFHQ/ffhq-dataset/downsample_ffhq_256x256.zip'
     num_files, input_iter = open_image_zip(image_list_file, max_images=8)
+    input_iter = input_iter[:4]
+    num_files = 4
     pbar = tqdm(enumerate(input_iter), total=num_files)
     # paramsets = {}
     for idx, image in pbar:
@@ -315,6 +317,7 @@ if __name__ == "__main__":
         except:
             print (idx, image['label'])
             continue 
+
     # print (paramsets)
     # # with open('/nfs/STG   /CodecAvatar/lelechen/FFHQ/ffhq-dataset/flame_p.pickle', 'wb') as handle:
     # #     pickle.dump(paramsets, handle, protocol=pickle.HIGHEST_PROTOCOL)
