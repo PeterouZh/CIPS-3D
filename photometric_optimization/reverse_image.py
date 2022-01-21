@@ -259,7 +259,10 @@ class PhotometricFitting(object):
         #                      vertices=torch.from_numpy(single_params['verts'][0]).to(self.device),
         #                      textures=torch.from_numpy(single_params['albedos'][0]).to(self.device)
         #                      )
-        np.save(f"{vis_folder}/flame_p.npy", single_params)
+        with open(f"{vis_folder}/flame_p.pickle", 'wb') as handle:
+        pickle.dump(single_params, handle, protocol=pickle.HIGHEST_PROTOCOL)
+
+        # np.save(f"{vis_folder}/flame_p.npy", single_params)
         return single_params
 if __name__ == "__main__":
     # image_path = "./test_images/69956.png"
