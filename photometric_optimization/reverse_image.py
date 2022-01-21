@@ -306,6 +306,8 @@ if __name__ == "__main__":
         util.check_mkdir(config.savefolder + image['label'])
         params = fitting.run(image['img'], vis_folder = config.savefolder + image['label'])
         paramsets[image['label']] = params
+        if idx == 1:
+            break
     
     with open('/nfs/STG/CodecAvatar/lelechen/FFHQ/ffhq-dataset/flame_p.pickle', 'wb') as handle:
         pickle.dump(paramsets, handle, protocol=pickle.HIGHEST_PROTOCOL)
