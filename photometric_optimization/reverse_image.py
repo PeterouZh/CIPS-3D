@@ -27,7 +27,7 @@ import zipfile
 import json
 import PIL.Image
 from typing import Callable, Optional, Tuple, Union
-
+from tqdm import tqdm
 #----------------------------------------------------------------------------
 
 def open_image_zip(source, *, max_images: Optional[int]):
@@ -290,12 +290,15 @@ if __name__ == "__main__":
     # image_path = "./test_images/69956.png"
     # img = imageio.imread(image_path)
     image_list_file = '/nfs/STG/CodecAvatar/lelechen/FFHQ/ffhq-dataset/downsample_ffhq_256x256.zip'
-    # with zipfile.ZipFile(image_list_file, mode='r') as z:
-    #     input_images = [str(f) for f in sorted(z.namelist()) if is_image_ext(f)]
-    # print (input_images)
-    image_list = read_image_list_from_files(image_list_file,compress=True)
-    print  (type(image_list))
-    image_path = image_list[0]
+    num_files, input_iter = open_image_zip(image_list_file, max_images=8)
+        # input_images = [str(f) for f in sorted(z.namelist()) if is_image_ext(f)]
+    pbar = tqdm(enumerate(input_iter), total=num_files)
+    for idx, image in pbar:
+        print (type(image))
+        print (image)
+        print (image.keys())
+    
+    image_path = input_images[0]
 
     img = imageio.imread(image_path)
 
