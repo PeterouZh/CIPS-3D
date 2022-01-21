@@ -259,8 +259,8 @@ class PhotometricFitting(object):
         #                      vertices=torch.from_numpy(single_params['verts'][0]).to(self.device),
         #                      textures=torch.from_numpy(single_params['albedos'][0]).to(self.device)
         #                      )
-        np.save(f"{vis_folder}/fckass.npy", single_params)
-
+        # np.save(f"{vis_folder}/fckass.npy", single_params)
+        return single_params
 if __name__ == "__main__":
     # image_path = "./test_images/69956.png"
     # img = imageio.imread(image_path)
@@ -301,7 +301,15 @@ if __name__ == "__main__":
     image_list_file = '/nfs/STG/CodecAvatar/lelechen/FFHQ/ffhq-dataset/downsample_ffhq_256x256_tmp.zip'
     num_files, input_iter = open_image_zip(image_list_file, max_images=8)
     pbar = tqdm(enumerate(input_iter), total=num_files)
+    paramsets = {}
     for idx, image in pbar:
         util.check_mkdir(config.savefolder + image['label'])
-        fitting.run(image['img'], vis_folder = config.savefolder + image['label'])
+        params = fitting.run(image['img'], vis_folder = config.savefolder + image['label'])
+        paramsets[image['label']] = params
     
+    with open('/nfs/STG/CodecAvatar/lelechen/FFHQ/ffhq-dataset/flame_p.pickle', 'wb') as handle:
+        pickle.dump(paramsets, handle, protocol=pickle.HIGHEST_PROTOCOL)
+    
+    with open('/nfs/STG/CodecAvatar/lelechen/FFHQ/ffhq-dataset/flame_p.pickle', 'rb') as handle:
+        b = pickle.load(handle)
+    print (b)
