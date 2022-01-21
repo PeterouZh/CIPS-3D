@@ -258,6 +258,7 @@ class PhotometricFitting(object):
 if __name__ == "__main__":
     # image_path = "./test_images/69956.png"
     # img = imageio.imread(image_path)
+    root = '/nfs/STG/CodecAvatar/lelechen/FFHQ/ffhq-dataset'
     image_list_file = '/nfs/STG/CodecAvatar/lelechen/FFHQ/ffhq-dataset/downsample_ffhq_256x256_tmp.zip'
     num_files, input_iter = open_image_zip(image_list_file, max_images=8)
         # input_images = [str(f) for f in sorted(z.namelist()) if is_image_ext(f)]
@@ -266,6 +267,16 @@ if __name__ == "__main__":
         print (type(image))
         print (image)
         print (image.keys())
+        print (image.shape)
+        imagepath = root + '/' + image['label']
+        print (imagepath)
+        image = cv2.imread(imagepath)
+        print (image.shape,"+++++")
+        image = image.astype(np.float32) / 255.
+        image = image[:, :, [2, 1, 0]].transpose(2, 0, 1)
+
+
+
     
     # image_path = input_images[0]
     # gg = read_image_list_from_files(image_list_file)
