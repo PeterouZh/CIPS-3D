@@ -24,7 +24,7 @@ import util
 torch.backends.cudnn.benchmark = True
 from tl2.tl2_utils import read_image_list_from_files
 sys.path.append('../scripts/')
-form dataset_tool import *
+from dataset_tool import *
 
 #----------------------------------------------------------------------------
 
