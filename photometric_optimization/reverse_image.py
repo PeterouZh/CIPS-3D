@@ -308,8 +308,8 @@ if __name__ == "__main__":
     config = util.dict2obj(config)
     
     k =  parse_args().k
-    gpuid = k % 7
-    # gpuid = 1
+    # gpuid = k % 7
+    gpuid = 7
     config.batch_size = 1
     fitting = PhotometricFitting(config, device="cuda:%d"%gpuid)
     
