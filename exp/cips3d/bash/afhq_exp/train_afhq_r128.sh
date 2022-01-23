@@ -70,7 +70,7 @@ python -c "from exp.tests.test_cips3d import Testing_afhq_exp;\
     batch_size 4 img_size 128 total_iters 800000 \
     gen_lr 0.0001 disc_lr 0.001 r1_lambda 10. nerf_noise_disable True \
     warmup_D True fade_steps 10000 \
-    train_aux_img False G_kwargs.num_steps 24 \
+    train_aux_img True G_kwargs.num_steps 24 \
     load_finetune True finetune_dir results/CIPS-3D/afhq_exp/train_afhq-20220120_122125_662/ckptdir/resume
 
 

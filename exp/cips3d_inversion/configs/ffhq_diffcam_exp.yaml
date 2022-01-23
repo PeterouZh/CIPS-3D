@@ -37,8 +37,8 @@ obs_inception_v3: &obs_inception_v3
 
 G_cfg_3D2D: &G_cfg_3D2D
   register_modules:
-  - exp.cips3d.models.generator_v1
-  name: exp.cips3d.models.generator_v1.GeneratorNerfINR
+  - exp.cips3d_inversion.models.generator
+  name: exp.cips3d_inversion.models.generator.Generator_Diffcam
   z_dim: 256
   optim:
     lr: 0.0002
@@ -77,14 +77,17 @@ G_cfg_3D2D: &G_cfg_3D2D
 
 G_kwargs: &G_kwargs
   fov: 12
-  ray_start: 0.88
-  ray_end: 1.12
-  num_steps: 12
   h_stddev: 0.3
   v_stddev: 0.155
-  hierarchical_sample: true
   psi: 1.
   sample_dist: 'gaussian'
+  nerf_kwargs:
+    near: 0.
+    far: 1.
+    N_samples: 12
+    N_importance: 24
+    raw_noise_std: 0. # 1.0
+    eps: 1.e-10
 
 _build_generator:
   G_cfg: *G_cfg_3D2D

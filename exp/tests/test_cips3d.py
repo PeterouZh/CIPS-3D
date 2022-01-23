@@ -1595,7 +1595,9 @@ class Testing_afhq_exp(unittest.TestCase):
     log_file = 'textdir/eval.ma0.FID.log'
     dd = eval(title)
     dd[f'{bucket_root}/results/CIPS-3D/afhq_exp/train_afhq-20220121_090048_760'] = \
-      {'20220121_090048_760-afhq_r128-gpu.8x4-finetune.F-aux.T-num_steps.24': f"{log_file}", }
+      {'20220121_090048_760-afhq_r128-gpu.8x4-finetune.T-aux.F-num_steps.24': f"{log_file}", }
+    dd[f'{bucket_root}/results/CIPS-3D/afhq_exp/train_afhq-20220123_134221_229'] = \
+      {'20220123_134221_229-afhq_r128-gpu.8x4-finetune.T-aux.T-num_steps.24': f"{log_file}", }
 
     dd['properties'] = {'title': title,
                         # 'xlim': [0, 3000000],
@@ -1604,27 +1606,27 @@ class Testing_afhq_exp(unittest.TestCase):
     default_dicts[title] = dd
     show_max.append(False)
 
-    FID_r128 = collections.defaultdict(dict)
-    title = 'FID_r128'
-    log_file = 'textdir/eval.ma0.FID.log'
-    dd = eval(title)
-    # dd[f'{bucket_root}/results/CIPS-3D/afhq_exp/train_afhq-20220111_145246_883'] = \
-    #   {'20220111_145246_883-afhq_r64-gpu.8x4': f"{log_file}", }
-    # dd[f'{bucket_root}/results/CIPS-3D/afhq_exp/train_afhq-20220111_164049_316'] = \
-    #   {'20220111_164049_316-afhq_r64-gpu.8x4': f"{log_file}", }
-    # dd[f'{bucket_root}/results/CIPS-3D/afhq_exp/train_afhq-20220111_204332_565'] = \
-    #   {'20220111_204332_565-afhq_r64-gpu.8x4': f"{log_file}", }
-    dd[f'{bucket_root}/results/CIPS-3D/afhq_exp/train_afhq-20220112_090440_418'] = \
-      {'20220112_090440_418-afhq_r64-gpu.8x4-finetune.T-aux.T': f"{log_file}", }
-    dd[f'{bucket_root}/results/CIPS-3D/afhq_exp/train_afhq-20220112_091215_231'] = \
-      {'20220112_091215_231-afhq_r64-gpu.8x4-finetune.T-aux.F': f"{log_file}", }
-
-    dd['properties'] = {'title': title,
-                        # 'xlim': [0, 3000000],
-                        # 'ylim': [0, 50]
-                        }
-    default_dicts[title] = dd
-    show_max.append(False)
+    # FID_r128 = collections.defaultdict(dict)
+    # title = 'FID_r128'
+    # log_file = 'textdir/eval.ma0.FID.log'
+    # dd = eval(title)
+    # # dd[f'{bucket_root}/results/CIPS-3D/afhq_exp/train_afhq-20220111_145246_883'] = \
+    # #   {'20220111_145246_883-afhq_r64-gpu.8x4': f"{log_file}", }
+    # # dd[f'{bucket_root}/results/CIPS-3D/afhq_exp/train_afhq-20220111_164049_316'] = \
+    # #   {'20220111_164049_316-afhq_r64-gpu.8x4': f"{log_file}", }
+    # # dd[f'{bucket_root}/results/CIPS-3D/afhq_exp/train_afhq-20220111_204332_565'] = \
+    # #   {'20220111_204332_565-afhq_r64-gpu.8x4': f"{log_file}", }
+    # dd[f'{bucket_root}/results/CIPS-3D/afhq_exp/train_afhq-20220112_090440_418'] = \
+    #   {'20220112_090440_418-afhq_r64-gpu.8x4-finetune.T-aux.T': f"{log_file}", }
+    # dd[f'{bucket_root}/results/CIPS-3D/afhq_exp/train_afhq-20220112_091215_231'] = \
+    #   {'20220112_091215_231-afhq_r64-gpu.8x4-finetune.T-aux.F': f"{log_file}", }
+    #
+    # dd['properties'] = {'title': title,
+    #                     # 'xlim': [0, 3000000],
+    #                     # 'ylim': [0, 50]
+    #                     }
+    # default_dicts[title] = dd
+    # show_max.append(False)
 
     FID_cat_r64 = collections.defaultdict(dict)
     title = 'FID_cat_r64'

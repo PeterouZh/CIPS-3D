@@ -3,6 +3,8 @@ import sys
 import unittest
 import argparse
 
+import torch
+
 
 class Testing_ffhq_diffcam_exp(unittest.TestCase):
 
@@ -54,22 +56,58 @@ class Testing_ffhq_diffcam_exp(unittest.TestCase):
                 """
     args, cfg = setup_outdir_and_yaml(argv_str, return_cfg=True)
 
+    from torchvision.utils import make_grid
+    import torchvision.transforms.functional as tv_f
     from tl2.proj.fvcore import build_model, TLCfgNode
     from tl2.proj.fvcore.checkpoint import Checkpointer
+    from tl2.proj.pil import pil_utils
+    from tl2.proj.pytorch import torch_utils
+    from tl2.proj.pytorch.examples.nerf import cam_params
+    from exp.cips3d_inversion.models.generator import Generator_Diffcam
+
+    torch_utils.init_seeds(seed=0)
 
     device = 'cuda'
 
-    G = build_model(cfg.G_cfg).to(device)
+    # G = build_model(cfg.G_cfg).to(device)
+    G = Generator_Diffcam(**cfg.G_cfg).to(device)
     Checkpointer(G).load_state_dict_from_file(cfg.network_pkl)
 
-    metadata['img_size'] = img_size
-    metadata['batch_size'] = batch_gpu
-    metadata['psi'] = 1
+    metadata = cfg.G_kwargs
 
-    G.eval()
-    zs = G.get_zs(metadata['batch_size'])
-    generated_imgs = generator(zs, forward_points=256 ** 2, **metadata)[0]
+    # metadata['h_stddev'] = 0
+    # metadata['v_stddev'] = 0
+    # metadata['img_size'] = 128
+    # metadata['batch_size'] = 4
+    # metadata['psi'] = 1
 
+    num_imgs = 4
+    H = W = 128
+    # N_rays = 1024
+    N_rays = -1
+
+    cam_param = cam_params.CamParams.from_config(num_imgs=num_imgs,
+                                                 H0=H,
+                                                 W0=W).cuda()
+
+    idx = list(range(num_imgs))
+    R, t, fx, fy = cam_param(idx)
+
+    rays_o, rays_d, select_inds = G.get_rays_axis_angle(R=R, t=t, fx=fx, fy=fy, H=H, W=W, N_rays=-1)
+    # G.eval()
+
+    with torch.set_grad_enabled(True):
+      zs = G.get_zs(num_imgs)
+      imgs, ret_imgs = G(zs=zs,
+                         rays_o=rays_o,
+                         rays_d=rays_d,
+                         forward_points=None, # disable gradients
+                         return_aux_img=True,
+                         **metadata)
+
+    img = make_grid(imgs, nrow=2, normalize=True, scale_each=True)
+    img_pil = tv_f.to_pil_image(img)
+    pil_utils.imshow_pil(img_pil, imgs.shape)
 
     pass
 
