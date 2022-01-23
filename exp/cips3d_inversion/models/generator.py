@@ -33,6 +33,7 @@ from exp.comm.models import film_layer
 from exp.comm.models import mod_conv_fc
 from exp.cips3d.models import multi_head_mapping
 
+
 class SkipLayer(nn.Module):
   def __init__(self, ):
     super(SkipLayer, self).__init__()
@@ -1421,7 +1422,7 @@ class Generator_Diffcam(GeneratorNerfINR_base):
     # batch_size = z.shape[0]
     # batch_size = list(style_dict.values())[0].shape[0]
 
-    if forward_points is not None: # no gradients
+    if forward_points is not None and forward_points < rays_o.shape[1]: # no gradients
       raise NotImplementedError
 
       # stage forward

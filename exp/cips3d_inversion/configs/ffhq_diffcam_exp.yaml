@@ -76,11 +76,7 @@ G_cfg_3D2D: &G_cfg_3D2D
     norm_out: true
 
 G_kwargs: &G_kwargs
-  fov: 12
-  h_stddev: 0.3
-  v_stddev: 0.155
   psi: 1.
-  sample_dist: 'gaussian'
   nerf_kwargs:
     near: 0.
     far: 1.
@@ -130,7 +126,7 @@ _setup_evaluation:
 
 _gen_images:
   base: train_ffhq
-  network_pkl: cache_pretrained/cips3d/G_ema_ffhq.pth
+  pkl_dir: "cache_pretrained/cips3d"
 
 _save_images:
   base: train_ffhq
@@ -151,6 +147,7 @@ train_ffhq:
   use_amp_D: false
   gen_lr: 0.0002
   disc_lr: 0.002
+  cam_lr: 0.0001
   betas: [0, 0.999]
   fixed_z_bs: 25
   total_iters: 200000
