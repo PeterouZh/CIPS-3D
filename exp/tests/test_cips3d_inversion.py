@@ -49,6 +49,8 @@ class Testing_ffhq_diffcam_exp(unittest.TestCase):
       {'20220109_174243_622-cips_v1': f"{log_file}", }
     dd[f'{bucket_root}/results/CIPS-3D/ffhq_diffcam_exp/train_ffhq-20220123_203119_425'] = \
       {'20220123_203119_425-ffhq_r64-gpu.4x8-finetune.F': f"{log_file}", }
+    dd[f'{bucket_root}/results/CIPS-3D/ffhq_diffcam_exp/train_ffhq-20220124_151831_125'] = \
+      {'20220124_151831_125-ffhq_r64-gpu.4x8-finetune.F': f"{log_file}", }
 
     dd['properties'] = {'title': title,
                         # 'xlim': [0, 3000000],
@@ -136,12 +138,6 @@ class Testing_ffhq_diffcam_exp(unittest.TestCase):
 
     metadata = cfg.G_kwargs
 
-    # metadata['h_stddev'] = 0
-    # metadata['v_stddev'] = 0
-    # metadata['img_size'] = 128
-    # metadata['batch_size'] = 4
-    # metadata['psi'] = 1
-
     num_imgs = 4
     H = W = 128
     # N_rays = 1024
@@ -151,10 +147,15 @@ class Testing_ffhq_diffcam_exp(unittest.TestCase):
                                                  H0=H,
                                                  W0=W).cuda()
 
-    idx = list(range(num_imgs))
-    R, t, fx, fy = cam_param(idx)
-    rays_o, rays_d, select_inds = G.get_rays_axis_angle(R=R, t=t, fx=fx, fy=fy, H=H, W=W, N_rays=-1)
+    # idx = list(range(num_imgs))
+    # R, t, fx, fy = cam_param(idx)
+    # rays_o, rays_d, select_inds = G.get_rays_axis_angle(R=R, t=t, fx=fx, fy=fy, H=H, W=W, N_rays=-1)
+
     # rays_o, rays_d = cam_param.get_rays_of_pose_avg(H=H, W=W, bs=num_imgs)
+
+    intr = cam_param(mode='get_intrinsic')
+    rays_o, rays_d, select_inds = cam_param.get_rays_random_pose(
+      device=device, bs=num_imgs, intr=intr, **metadata.nerf_kwargs)
 
     # G.eval()
 

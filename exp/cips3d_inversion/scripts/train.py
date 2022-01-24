@@ -88,6 +88,25 @@ def saved_models(model_dict,
   pass
 
 
+def _save_images(G,
+                 fixed_z,
+                 rays_o,
+                 rays_d,
+                 G_kwargs,
+                 saved_path,
+                 bs):
+
+  Gz, ret_imgs = G(zs=fixed_z,
+                   rays_o=rays_o,
+                   rays_d=rays_d,
+                   forward_points=256 ** 2,
+                   return_aux_img=True,
+                   **G_kwargs)
+  Gz_aux = ret_imgs['aux_img']
+  Gz = torch.cat([Gz, Gz_aux], dim=0)
+  save_image(Gz, saved_path, nrow=int(math.sqrt(bs)), normalize=True, scale_each=True)
+  pass
+
 @torch.no_grad()
 def save_images(saved_dir,
                 G,
@@ -106,76 +125,83 @@ def save_images(saved_dir,
   G_kwargs = copy.deepcopy(G_kwargs)
   H = W = img_size
 
-  # intr = cam_param.get_intrinsic(H, W)
-  rays_o, rays_d = cam_param.get_rays_of_pose_avg(H=H, W=W, bs=bs)
+  # rays_o, rays_d = cam_param.get_rays_of_pose_avg(H=H, W=W, bs=bs)
 
   with torch.cuda.amp.autocast(use_amp_G):
     copied_metadata = copy.deepcopy(G_kwargs)
+    copied_metadata['nerf_kwargs']['h_stddev'] = 0.
+    copied_metadata['nerf_kwargs']['v_stddev'] = 0.
 
-    Gz, ret_imgs = G(zs=fixed_z,
-                     rays_o=rays_o,
-                     rays_d=rays_d,
-                     forward_points=256 ** 2,
-                     return_aux_img=True,
-                     **copied_metadata)
-    Gz_aux = ret_imgs['aux_img']
-    Gz = torch.cat([Gz, Gz_aux], dim=0)
-    save_image(Gz, f"{saved_dir}/0Gz.jpg", nrow=int(math.sqrt(bs)), normalize=True, scale_each=True)
+    rays_o, rays_d, select_inds = cam_param.get_rays_random_pose(
+      device=device, bs=bs, intr=None, **copied_metadata['nerf_kwargs'])
 
-    Gema_z, ret_imgs = G_ema(zs=fixed_z,
+    _save_images(G=G, fixed_z=fixed_z, rays_o=rays_o, rays_d=rays_d,
+                 G_kwargs=copied_metadata,
+                 saved_path=f"{saved_dir}/0Gz.jpg", bs=bs)
+
+    _save_images(G=G_ema, fixed_z=fixed_z, rays_o=rays_o, rays_d=rays_d,
+                 G_kwargs=copied_metadata,
+                 saved_path=f"{saved_dir}/0Gz_ema.jpg", bs=bs)
+
+    copied_metadata['psi'] = 0.7
+    _save_images(G=G_ema, fixed_z=fixed_z, rays_o=rays_o, rays_d=rays_d,
+                 G_kwargs=copied_metadata,
+                 saved_path=f"{saved_dir}/0G_trunc_ema.jpg", bs=bs)
+
+  with torch.cuda.amp.autocast(use_amp_G):
+    copied_metadata = copy.deepcopy(G_kwargs)
+    copied_metadata['nerf_kwargs']['h_stddev'] = 0.
+    copied_metadata['nerf_kwargs']['v_stddev'] = 0.
+    copied_metadata['nerf_kwargs']['h_mean'] = math.pi * 0.5 + 0.5
+
+    rays_o, rays_d, select_inds = cam_param.get_rays_random_pose(
+      device=device, bs=bs, intr=None, **copied_metadata['nerf_kwargs'])
+
+    _save_images(G=G, fixed_z=fixed_z, rays_o=rays_o, rays_d=rays_d,
+                 G_kwargs=copied_metadata,
+                 saved_path=f"{saved_dir}/0Gz_tilted.jpg", bs=bs)
+
+    _save_images(G=G_ema, fixed_z=fixed_z, rays_o=rays_o, rays_d=rays_d,
+                 G_kwargs=copied_metadata,
+                 saved_path=f"{saved_dir}/0Gz_tilted_ema.jpg", bs=bs)
+
+  # Monitor mirror symmetry
+  bs = min(20, bs)
+  sub_fixed_z = {}
+  for name, z_ in fixed_z.items():
+    sub_fixed_z[name] = z_[:bs]
+  fixed_z = sub_fixed_z
+
+  with torch.cuda.amp.autocast(use_amp_G):
+    copied_metadata = copy.deepcopy(G_kwargs)
+    copied_metadata['nerf_kwargs']['h_stddev'] = 0.
+    copied_metadata['nerf_kwargs']['v_stddev'] = 0.
+    copied_metadata['nerf_kwargs']['h_mean'] = 1.44
+
+    rays_o, rays_d, select_inds = cam_param.get_rays_random_pose(
+      device=device, bs=bs, intr=None, **copied_metadata['nerf_kwargs'])
+
+    Gema_flip1, ret_imgs = G(zs=fixed_z,
                              rays_o=rays_o,
                              rays_d=rays_d,
                              forward_points=256 ** 2,
                              return_aux_img=True,
                              **copied_metadata)
-    Gema_z_aux = ret_imgs['aux_img']
-    Gema_z = torch.cat([Gema_z, Gema_z_aux], dim=0)
-    save_image(Gema_z, f"{saved_dir}/0Gz_ema.jpg", nrow=int(math.sqrt(bs)), normalize=True, scale_each=True)
+    Gema_flip1_aux = ret_imgs['aux_img']
+    Gema_flip1 = torch.cat([Gema_flip1, Gema_flip1_aux], dim=0)
 
-    copied_metadata['psi'] = 0.7
-    Gema_trunc, ret_imgs = G_ema(zs=fixed_z,
-                                 rays_o=rays_o,
-                                 rays_d=rays_d,
-                                 forward_points=256 ** 2,
-                                 return_aux_img=True,
-                                 **copied_metadata)
-    Gema_trunc_aux = ret_imgs['aux_img']
-    Gema_trunc = torch.cat([Gema_trunc, Gema_trunc_aux], dim=0)
-    save_image(Gema_trunc, f"{saved_dir}/0G_trunc_ema.jpg",
-               nrow=int(math.sqrt(bs)), normalize=True, scale_each=True)
+    copied_metadata['nerf_kwargs']['h_mean'] = 1.70
+    Gema_flip2, ret_imgs = G(zs=fixed_z,
+                             rays_o=rays_o,
+                             rays_d=rays_d,
+                             forward_points=256 ** 2,
+                             return_aux_img=True,
+                             **copied_metadata)
+    Gema_flip2_aux = ret_imgs['aux_img']
+    Gema_flip2 = torch.cat([Gema_flip2, Gema_flip2_aux], dim=0)
 
-  # with torch.cuda.amp.autocast(use_amp_G):
-  #   copied_metadata = copy.deepcopy(G_kwargs)
-  #   copied_metadata['h_stddev'] = 0
-  #   copied_metadata['v_stddev'] = 0
-  #   copied_metadata['h_mean'] = math.pi * 0.5 + 0.5
-  #   Gz_tilted = G(fixed_z, return_aux_img=True, forward_points=256 ** 2, **copied_metadata)[0]
-  #   save_image(Gz_tilted, f"{saved_dir}/0Gz_tilted.jpg",
-  #              nrow=int(math.sqrt(bs)), normalize=True, scale_each=True)
-  #
-  #   Gema_z_tilted = G_ema(fixed_z, return_aux_img=True, forward_points=256 ** 2, **copied_metadata)[0]
-  #   save_image(Gema_z_tilted, f"{saved_dir}/0Gz_tilted_ema.jpg",
-  #              nrow=int(math.sqrt(bs)), normalize=True, scale_each=True)
-
-  # Monitor mirror symmetry
-  # bs = min(20, bs)
-  # sub_fixed_z = {}
-  # for name, z_ in fixed_z.items():
-  #   sub_fixed_z[name] = z_[:bs]
-  # fixed_z = sub_fixed_z
-  #
-  # with torch.cuda.amp.autocast(use_amp_G):
-  #   copied_metadata = copy.deepcopy(G_kwargs)
-  #   copied_metadata['h_stddev'] = 0
-  #   copied_metadata['v_stddev'] = 0
-  #   copied_metadata['h_mean'] = 1.44
-  #   Gema_flip1 = G_ema(fixed_z, return_aux_img=True, forward_points=256 ** 2, **copied_metadata)[0]
-  #
-  #   copied_metadata['h_mean'] = 1.70
-  #   Gema_flip2 = G_ema(fixed_z, return_aux_img=True, forward_points=256 ** 2, **copied_metadata)[0]
-  #
-  #   Gema_flip = torch.cat([Gema_flip1, Gema_flip2])
-  #   save_image(Gema_flip, f"{saved_dir}/0G_flip_ema.jpg", nrow=bs//2, normalize=True, scale_each=True)
+    Gema_flip = torch.cat([Gema_flip1, Gema_flip2])
+    save_image(Gema_flip, f"{saved_dir}/0G_flip_ema.jpg", nrow=bs//2, normalize=True, scale_each=True)
 
   pass
 
@@ -275,7 +301,7 @@ def train(rank,
   # batch_data = next(data_loader_iter)
 
   H = W = global_cfg.img_size
-  cam_param = cam_params.CamParams.from_config(num_imgs=len(dataset), H0=H, W0=W).to(device)
+  cam_param = cam_params.CamParams.from_config(num_imgs=1, H0=H, W0=W).to(device)
   cam_param_ddp = DDP(cam_param, device_ids=[rank], find_unused_parameters=True, broadcast_buffers=False)
 
   generator = build_model(cfg=global_cfg.G_cfg).to(device)
@@ -407,8 +433,11 @@ def train(rank,
 
         imgs_idx_list = imgs_idx.chunk(global_cfg.batch_split)
         for subset_z, sub_imgs_idx in zip(zs_list, imgs_idx_list):
-          R, t, fx, fy = cam_param(sub_imgs_idx)
-          rays_o, rays_d, _ = generator.get_rays_axis_angle(R=R, t=t, fx=fx, fy=fy, H=H, W=W, N_rays=-1)
+          # R, t, fx, fy = cam_param(sub_imgs_idx)
+          # rays_o, rays_d, _ = generator.get_rays_axis_angle(R=R, t=t, fx=fx, fy=fy, H=H, W=W, N_rays=-1)
+          intr = cam_param_ddp(mode='get_intrinsic')
+          rays_o, rays_d, select_inds = cam_param.get_rays_random_pose(
+            device=device, bs=len(sub_imgs_idx), intr=intr, **G_kwargs['nerf_kwargs'])
           g_imgs, ret_imgs = generator_ddp(zs=subset_z,
                                            rays_o=rays_o,
                                            rays_d=rays_d,
@@ -502,8 +531,11 @@ def train(rank,
     imgs_idx_list = imgs_idx.chunk(global_cfg.batch_split)
     for subset_z, sub_imgs_idx in zip(zs_list, imgs_idx_list):
       with torch.cuda.amp.autocast(global_cfg.use_amp_G):
-        R, t, fx, fy = cam_param(sub_imgs_idx)
-        rays_o, rays_d, _ = generator.get_rays_axis_angle(R=R, t=t, fx=fx, fy=fy, H=H, W=W, N_rays=-1)
+        # R, t, fx, fy = cam_param(sub_imgs_idx)
+        # rays_o, rays_d, _ = generator.get_rays_axis_angle(R=R, t=t, fx=fx, fy=fy, H=H, W=W, N_rays=-1)
+        intr = cam_param_ddp(mode='get_intrinsic')
+        rays_o, rays_d, select_inds = cam_param.get_rays_random_pose(
+          device=device, bs=len(sub_imgs_idx), intr=intr, **G_kwargs['nerf_kwargs'])
         gen_imgs, ret_imgs = generator_ddp(zs=subset_z,
                                            rays_o=rays_o,
                                            rays_d=rays_d,
@@ -565,6 +597,11 @@ def train(rank,
       summary_ddict['train_aux_img']['train_aux_img'] = int(global_cfg.train_aux_img)
       summary_ddict['alpha']['alpha'] = alpha
       summary_ddict['diffaug']['diffaug'] = int(global_cfg.diffaug)
+      with torch.no_grad():
+        fx, fy = cam_param.get_focal()
+        summary_ddict['intr']['fx'] = fx.item()
+        summary_ddict['intr']['fy'] = fy.item()
+
       if step > 1000:
         summary_defaultdict2txtfig(summary_ddict, prefix='train', step=state_dict['step'], textlogger=global_textlogger)
       summary_str = tl2_utils.get_print_dict_str(summary_ddict, outdir=global_cfg.tl_outdir,

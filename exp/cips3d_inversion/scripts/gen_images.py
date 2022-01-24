@@ -60,11 +60,15 @@ def gen_images(rank,
 
       zs = generator.get_zs(metadata['batch_size'])
 
-      idx_start = idx_b * batch_size + rank * batch_gpu
-      idx_end = idx_start + batch_gpu
-      imgs_idx = torch.arange(idx_start, idx_end, device=device)
-      R, t, fx, fy = cam_param(imgs_idx)
-      rays_o, rays_d, _ = generator.get_rays_axis_angle(R=R, t=t, fx=fx, fy=fy, H=H, W=W, N_rays=-1)
+      # idx_start = idx_b * batch_size + rank * batch_gpu
+      # idx_end = idx_start + batch_gpu
+      # imgs_idx = torch.arange(idx_start, idx_end, device=device)
+      # R, t, fx, fy = cam_param(imgs_idx)
+      # rays_o, rays_d, _ = generator.get_rays_axis_angle(R=R, t=t, fx=fx, fy=fy, H=H, W=W, N_rays=-1)
+
+      # intr = cam_param(mode='get_intrinsic')
+      rays_o, rays_d, select_inds = cam_param.get_rays_random_pose(
+        device=device, bs=batch_gpu, intr=None, **G_kwargs['nerf_kwargs'])
 
       generated_imgs, ret_imgs = generator(zs=zs,
                                            rays_o=rays_o,
