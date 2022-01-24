@@ -134,7 +134,7 @@ I will release all the pre-trained models when the reproducing is over.
 
 - `exp/cips3d/bash/afhq_exp:`
 
-## Pre-trained checkpoints
+## Pre-trained checkpoints (including generator and discriminator)
 
 |   | ffhq_exp |
 |:---:|:---:|
