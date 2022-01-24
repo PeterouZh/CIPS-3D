@@ -110,6 +110,16 @@ python scripts/dataset_tool.py \
     
 ```
 
+**AFHQ** Download [afhq](https://github.com/clovaai/stargan-v2#animal-faces-hq-dataset-afhq) dataset
+```bash
+# Prepare training dataset.
+python scripts/dataset_tool.py \
+    --source=datasets/AFHQv2/AFHQv2 \
+    --dest=datasets/AFHQv2/AFHQv2_stylegan2.zip 
+    
+```
+
+
 
 
 </details>

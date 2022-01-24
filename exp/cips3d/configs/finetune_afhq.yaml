@@ -1,0 +1,115 @@
+finetune_afhq:
+  seed: 1234
+  G_cfg:
+    register_modules:
+    - exp.cips3d.models.generator
+    name: exp.cips3d.models.generator.GeneratorNerfINR_freeze_NeRF
+    z_dim: 256
+    optim:
+      lr: 0.0002
+      equal_lr: 0.001
+    nerf_cfg:
+      in_dim: 3
+      hidden_dim: 128
+      hidden_layers: 2
+      rgb_dim: 32
+      style_dim: 128
+    mapping_nerf_cfg:
+      z_dim: 256
+      hidden_dim: 128
+      base_layers: 4
+      head_layers: 0
+    inr_cfg:
+      input_dim: 32
+      style_dim: 512
+      hidden_dim: 512
+      pre_rgb_dim: 3
+    mapping_inr_cfg:
+      z_dim: 512
+      hidden_dim: 512
+      base_layers: 8
+      head_layers: 0
+      add_norm: true
+      norm_out: true
+  D_cfg:
+    register_modules:
+    - exp.cips3d.models.discriminator
+    name: exp.cips3d.models.discriminator.Discriminator_MultiScale_Aux
+    diffaug: true
+    max_size: 1024
+    channel_multiplier: 2
+    first_downsample: false
+    stddev_group: 0
+  data_cfg:
+    register_modules:
+    - tl2.proj.pytorch.examples.dataset_stylegan3.dataset
+    name: ImageFolderDataset_of_stylegan
+    path: datasets/AFHQv2/AFHQv2_stylegan2.zip
+    use_labels: false
+    max_size: null
+    xflip: true
+    resize_resolution: null
+    random_seed: 0
+  root_obs: s3://bucket-3690/ZhouPeng
+  obs_training_dataset:
+    datapath_obs: keras/AFHQv2/AFHQv2_stylegan2.zip
+    datapath: datasets/AFHQv2/AFHQv2_stylegan2.zip
+    disable: false
+    overwrite: false
+    unzip: false
+  obs_inception_v3:
+    datapath_obs: keras/cache/torch/hub/checkpoints/weights-inception-2015-12-05-6726825d.pth
+    datapath: ~/.cache/torch/hub/checkpoints/weights-inception-2015-12-05-6726825d.pth
+    disable: false
+    overwrite: false
+    unzip: false
+  G_kwargs:
+    fov: 12
+    ray_start: 0.88
+    ray_end: 1.12
+    num_steps: 12
+    h_stddev: 0.3
+    v_stddev: 0.155
+    hierarchical_sample: true
+    psi: 1.0
+    sample_dist: gaussian
+  use_amp_G: false
+  use_amp_D: false
+  gen_lr: 0.0001
+  disc_lr: 0.0005
+  betas:
+  - 0
+  - 0.999
+  fixed_z_bs: 25
+  total_iters: 200000
+  batch_size: 4
+  batch_split: 1
+  img_size: 256
+  num_workers: 2
+  diffaug: true
+  r1_lambda: 10.0
+  d_reg_every: 1
+  train_aux_img: false
+  update_aux_every: 1
+  grad_clip: 10
+  forward_points: 256
+  grad_points: 256
+  warmup_D: false
+  fade_steps: 10000
+  log_every: 10
+  eval_every: 500
+  del_fid_real_images: true
+  num_images_real_eval: 2048
+  num_images_gen_eval: 2048
+  eval_batch_size: 16
+  load_G_ema: true
+  reset_best_fid: false
+  load_finetune: true
+  finetune_dir: cache_pretrained/train_ffhq_high-20220105_143314_190/resume_iter_645500
+  ema_start_itr: 1000
+  load_nerf_ema: true
+  nerf_noise_disable: true
+
+
+
+

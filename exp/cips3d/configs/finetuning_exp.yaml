@@ -30,6 +30,28 @@ dataset_photo2cartoon_r256: &dataset_photo2cartoon_r256
   random_seed: 0
 
 
+obs_afhq_r512: &obs_afhq_r512
+  datapath_obs: 'keras/AFHQv2/AFHQv2_stylegan2.zip'
+  datapath: "datasets/AFHQv2/AFHQv2_stylegan2.zip"
+  disable: false
+  overwrite: false
+  unzip: false
+
+dataset_afhq_r512: &dataset_afhq_r512
+  register_modules:
+    - "tl2.proj.pytorch.examples.dataset_stylegan3.dataset"
+  name: "ImageFolderDataset_of_stylegan"
+  path: 'datasets/AFHQv2/AFHQv2_stylegan2.zip'
+  use_labels: False
+  max_size: null
+#  max_size: 100
+  xflip: True
+  resize_resolution: null
+#  resize_resolution: 1024
+  random_seed: 0
+
+
+
 G_cfg_3D2D: &G_cfg_3D2D
   register_modules:
   - exp.cips3d.models.generator
@@ -162,3 +184,28 @@ finetune_photo2cartoon:
   load_finetune: true
   finetune_dir: "results/CIPS-3D/ffhq_exp/train_ffhq_high-20220105_143314_190/ckptdir/best_fid"
 
+
+finetune_afhq:
+  base: train_ffhq
+  data_cfg: *dataset_afhq_r512
+  obs_training_dataset: *obs_afhq_r512
+  train_aux_img: false
+  D_cfg:
+    diffaug: true
+  G_cfg:
+    register_modules:
+    - exp.cips3d.models.generator
+    name: exp.cips3d.models.generator.GeneratorNerfINR_freeze_NeRF
+  diffaug: true
+  gen_lr: 0.0001
+  disc_lr: 0.0005
+  warmup_D: false
+  img_size: 256
+  num_images_real_eval: 2048
+  num_images_gen_eval: 2048
+  ema_start_itr: 1000
+  eval_every: 500
+  load_nerf_ema: true
+  load_finetune: true
+  nerf_noise_disable: true
+  finetune_dir: "cache_pretrained/train_ffhq_high-20220105_143314_190/resume_iter_645500"
