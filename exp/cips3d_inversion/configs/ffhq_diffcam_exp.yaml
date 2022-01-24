@@ -78,8 +78,10 @@ G_cfg_3D2D: &G_cfg_3D2D
 G_kwargs: &G_kwargs
   psi: 1.
   nerf_kwargs:
-#    near: 0.
-#    far: 1.
+#    near: 0.3
+#    far: 1.7
+#    near: 0.5
+#    far: 1.5
     near: 0.88
     far: 1.12
     N_samples: 12

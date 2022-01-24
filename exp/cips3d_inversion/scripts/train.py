@@ -176,27 +176,32 @@ def save_images(saved_dir,
     copied_metadata = copy.deepcopy(G_kwargs)
     copied_metadata['nerf_kwargs']['h_stddev'] = 0.
     copied_metadata['nerf_kwargs']['v_stddev'] = 0.
-    copied_metadata['nerf_kwargs']['h_mean'] = 1.44
 
+    copied_metadata['nerf_kwargs']['h_mean'] = math.pi * 0.5 - 0.15
     rays_o, rays_d, select_inds = cam_param.get_rays_random_pose(
       device=device, bs=bs, intr=None, **copied_metadata['nerf_kwargs'])
 
-    Gema_flip1, ret_imgs = G(zs=fixed_z,
-                             rays_o=rays_o,
-                             rays_d=rays_d,
-                             forward_points=256 ** 2,
-                             return_aux_img=True,
-                             **copied_metadata)
+    Gema_flip1, ret_imgs = G_ema(zs=fixed_z,
+                                 rays_o=rays_o,
+                                 rays_d=rays_d,
+                                 forward_points=256 ** 2,
+                                 return_aux_img=True,
+                                 **copied_metadata)
     Gema_flip1_aux = ret_imgs['aux_img']
     Gema_flip1 = torch.cat([Gema_flip1, Gema_flip1_aux], dim=0)
 
-    copied_metadata['nerf_kwargs']['h_mean'] = 1.70
-    Gema_flip2, ret_imgs = G(zs=fixed_z,
-                             rays_o=rays_o,
-                             rays_d=rays_d,
-                             forward_points=256 ** 2,
-                             return_aux_img=True,
-                             **copied_metadata)
+    # resampling
+    copied_metadata['nerf_kwargs']['h_mean'] = math.pi * 0.5 + 0.15
+    rays_o, rays_d, select_inds = cam_param.get_rays_random_pose(
+      device=device, bs=bs, intr=None, **copied_metadata['nerf_kwargs'])
+
+
+    Gema_flip2, ret_imgs = G_ema(zs=fixed_z,
+                                 rays_o=rays_o,
+                                 rays_d=rays_d,
+                                 forward_points=256 ** 2,
+                                 return_aux_img=True,
+                                 **copied_metadata)
     Gema_flip2_aux = ret_imgs['aux_img']
     Gema_flip2 = torch.cat([Gema_flip2, Gema_flip2_aux], dim=0)
 

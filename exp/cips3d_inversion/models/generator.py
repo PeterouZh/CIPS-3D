@@ -280,7 +280,10 @@ class NeRFNetwork(nn.Module):
         ])),
         inputs_args=(input,),
         name_prefix="xyz.")
-    input = self.gridwarper(input)
+
+    # scale xyz
+    # input = self.gridwarper(input)
+
     # xyz_emb = self.xyz_emb(input)
     # x = xyz_emb
     x = input
