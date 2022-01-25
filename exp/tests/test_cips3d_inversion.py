@@ -144,18 +144,27 @@ class Testing_ffhq_diffcam_exp(unittest.TestCase):
 
     # G = build_model(cfg.G_cfg).to(device)
     G = Generator_Diffcam(**cfg.G_cfg).to(device)
-    Checkpointer(G).load_state_dict_from_file(cfg.network_pkl)
+    # Checkpointer(G).load_state_dict_from_file(cfg.network_pkl)
 
     metadata = cfg.G_kwargs
+    metadata['nerf_kwargs']['h_stddev'] = 0.
+    metadata['nerf_kwargs']['v_stddev'] = 0.
 
     num_imgs = 4
     H = W = 128
     # N_rays = 1024
     N_rays = -1
 
-    cam_param = cam_params.CamParams.from_config(num_imgs=num_imgs,
+    cam_param = cam_params.CamParams.from_config(num_imgs=1,
                                                  H0=H,
                                                  W0=W).cuda()
+
+    ckpt_dir = "../bucket_3690/results/CIPS-3D/ffhq_diffcam_exp/train_ffhq-20220124_164043_043/ckptdir/resume"
+    model_dict = {
+      'G_ema': G,
+      'cam_param': cam_param
+    }
+    torch_utils.load_models(ckpt_dir, model_dict=model_dict)
 
     # idx = list(range(num_imgs))
     # R, t, fx, fy = cam_param(idx)
@@ -167,18 +176,28 @@ class Testing_ffhq_diffcam_exp(unittest.TestCase):
     rays_o, rays_d, select_inds = cam_param.get_rays_random_pose(
       device=device, bs=num_imgs, intr=intr, **metadata.nerf_kwargs)
 
-    # G.eval()
+    G.eval()
+    zs = G.get_zs(num_imgs)
+
+    with torch.set_grad_enabled(False):
+      imgs, ret_imgs = G(zs=zs,
+                         rays_o=rays_o,
+                         rays_d=rays_d,
+                         forward_points=32 ** 2,  # disable gradients
+                         return_aux_img=True,
+                         **metadata)
+    img = make_grid(imgs, nrow=2, normalize=True, scale_each=True)
+    img_pil = tv_f.to_pil_image(img)
+    pil_utils.imshow_pil(img_pil, f"forward_points {imgs.shape}")
 
 
-    with torch.set_grad_enabled(True):
-      zs = G.get_zs(num_imgs)
+    with torch.set_grad_enabled(False):
       imgs, ret_imgs = G(zs=zs,
                          rays_o=rays_o,
                          rays_d=rays_d,
                          forward_points=None, # disable gradients
                          return_aux_img=True,
                          **metadata)
-
     img = make_grid(imgs, nrow=2, normalize=True, scale_each=True)
     img_pil = tv_f.to_pil_image(img)
     pil_utils.imshow_pil(img_pil, imgs.shape)
