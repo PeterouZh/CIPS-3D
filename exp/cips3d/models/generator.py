@@ -1397,7 +1397,7 @@ class GeneratorNerfINR(GeneratorNerfINR_base):
                          forward_points=None,
                          camera_pos=None,
                          camera_lookup=None,
-                         ):
+                         up_vector=None):
     device = self.device
     # batch_size = z.shape[0]
     batch_size = list(style_dict.values())[0].shape[0]
@@ -1435,6 +1435,7 @@ class GeneratorNerfINR(GeneratorNerfINR_base):
             device=device,
             camera_pos=camera_pos,
             camera_lookup=camera_lookup,
+            up_vector=up_vector,
           )
           pitch_list.append(pitch)
           yaw_list.append(yaw)
@@ -1848,6 +1849,7 @@ class GeneratorNerfINR(GeneratorNerfINR_base):
               return_aux_img=False,
               grad_points=None,
               forward_points=None,
+              up_vector=None,
               **kwargs):
     """
     Generates images from a noise vector, rendering parameters, and camera distribution.
@@ -1945,7 +1947,7 @@ class GeneratorNerfINR(GeneratorNerfINR_base):
         forward_points=forward_points,
         camera_pos=camera_pos,
         camera_lookup=camera_lookup,
-      )
+        up_vector=up_vector)
       return imgs, pitch_yaw
 
 

@@ -166,6 +166,56 @@ def get_translate_circle_camera_pos_and_lookup(r=1,
 
   return xyz, lookup, yaws, pitchs, num_samples_translate
 
+
+def get_translate_rotate(r=1,
+                         num_samples_translate=36,
+                         translate_dist=0.5,
+                         alpha=3.141592 / 6,
+                         num_samples=36,
+                         periods=1):
+  trans_dist = _get_translate_distance(num_samples=num_samples_translate, translate_dist=translate_dist)
+  num_samples_translate = len(trans_dist)
+
+  translateX_lookup = np.zeros((num_samples_translate, 3), dtype=np.float32)
+  translateX_lookup[:, 2] = -1
+  translateX_up = np.zeros((num_samples_translate, 3), dtype=np.float32)
+  translateX_up[:, 1] = 1
+  translateX_xyz = np.zeros((num_samples_translate, 3), dtype=np.float32)
+  for idx, t in enumerate(trans_dist):
+    translateX_xyz[idx, 0] = t
+    translateX_xyz[idx, 2] = r * math.cos(alpha)
+
+  translateY_xyz = np.zeros((num_samples_translate, 3), dtype=np.float32)
+  translateY_xyz[:, 1] = translateX_xyz[:, 0]
+  translateY_xyz[:, 2] = translateX_xyz[:, 2]
+  translateY_lookup = translateX_lookup
+  translateY_up = translateX_up
+
+  num_samples = num_samples * periods
+  xyz = np.zeros((num_samples, 3), dtype=np.float32)
+  xyz[:, 2] = r * math.cos(alpha)
+  lookup = - xyz
+  up = np.zeros((num_samples, 3), dtype=np.float32)
+
+  for idx, beta in enumerate(np.linspace(0, 2*math.pi*periods, num_samples)):
+    up[idx, 0] = - math.sin(beta)
+    up[idx, 1] = math.cos(beta)
+
+  xyz = np.concatenate((translateX_xyz, translateY_xyz, xyz), axis=0)
+  lookup = np.concatenate((translateX_lookup, translateY_lookup, lookup), axis=0)
+  up = np.concatenate((translateX_up, translateY_up, up), axis=0)
+
+  num_samples = len(xyz)
+  yaws = np.zeros(num_samples)
+  pitchs = np.zeros(num_samples)
+  for idx, (x, y, z) in enumerate(xyz):
+    yaw, pitch = get_yaw_pitch_by_xyz(x, y, z)
+    yaws[idx] = yaw
+    pitchs[idx] = pitch
+
+  return xyz, lookup, up, yaws, pitchs, num_samples_translate
+
+
 def get_yaw_camera_pos_and_lookup(r=1,
                                   num_samples=36,
                                   ):
@@ -431,7 +481,8 @@ def sample_camera_positions(device,
 
 def create_cam2world_matrix(forward_vector,
                             origin,
-                            device=None):
+                            device=None,
+                            up_vector=None):
   """
   Takes in the direction the camera is pointing
   and the camera origin and returns a cam2world matrix.
@@ -445,8 +496,8 @@ def create_cam2world_matrix(forward_vector,
   """"""
 
   forward_vector = normalize_vecs(forward_vector)
-  up_vector = torch.tensor([0, 1, 0], dtype=torch.float, device=device) \
-    .expand_as(forward_vector)
+  if up_vector is None:
+    up_vector = torch.tensor([0, 1, 0], dtype=torch.float, device=device).expand_as(forward_vector)
 
   left_vector = normalize_vecs(
     torch.cross(up_vector,
@@ -485,6 +536,7 @@ def transform_sampled_points(points,
                              mode='normal',
                              camera_pos=None,
                              camera_lookup=None,
+                             up_vector=None,
                              ):
   """
   Perturb z_vals and points;
@@ -535,7 +587,8 @@ def transform_sampled_points(points,
 
   cam2world_matrix = create_cam2world_matrix(forward_vector,
                                              camera_origin,
-                                             device=device)
+                                             device=device,
+                                             up_vector=up_vector)
 
   points_homogeneous = torch.ones(
     (points.shape[0], points.shape[1], points.shape[2], points.shape[3] + 1),
@@ -585,6 +638,7 @@ def get_world_points_and_direction(batch_size,
                                    device='cpu',
                                    camera_pos=None,
                                    camera_lookup=None,
+                                   up_vector=None,
                                    ):
   """
   Generate sample points and camera rays in the world coordinate system.
@@ -637,7 +691,7 @@ def get_world_points_and_direction(batch_size,
                                         mode=sample_dist,
                                         camera_pos=camera_pos,
                                         camera_lookup=camera_lookup,
-                                        )
+                                        up_vector=up_vector)
 
   transformed_ray_directions_expanded = repeat(
     transformed_ray_directions, "b hw xyz -> b (hw s) xyz", s=num_steps)
