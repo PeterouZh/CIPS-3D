@@ -328,11 +328,11 @@ def batch_gather_points(points,
   if points.dim() == 4:
     idx_grad = rearrange(idx_grad, "b n -> b n 1 1")
     idx_grad = idx_grad.expand(points.shape[0], -1, points.shape[-2], points.shape[-1])
-    sampled_points = torch.gather(points, dim=1, index=idx_grad, sparse_grad=True)
+    sampled_points = torch.gather(points, dim=1, index=idx_grad, sparse_grad=False)
   elif points.dim() == 3:
     idx_grad = rearrange(idx_grad, "b n -> b n 1")
     idx_grad = idx_grad.expand(points.shape[0], -1, points.shape[-1])
-    sampled_points = torch.gather(points, dim=1, index=idx_grad, sparse_grad=True)
+    sampled_points = torch.gather(points, dim=1, index=idx_grad, sparse_grad=False)
   else:
     assert 0
   return sampled_points
