@@ -1,6 +1,7 @@
 from itertools import chain
 import math
 import logging
+import collections
 from collections import OrderedDict
 import tqdm
 import random
@@ -1422,78 +1423,53 @@ class Generator_Diffcam(GeneratorNerfINR_base):
                          forward_points=None,
                          **kwargs):
 
-    # batch_size = z.shape[0]
-    # batch_size = list(style_dict.values())[0].shape[0]
-
     if forward_points is not None and forward_points < rays_o.shape[1]: # no gradients
-      raise NotImplementedError
-
       # stage forward
       with torch.no_grad():
-        num_points = img_size ** 2
-        inr_img_output = torch.zeros((batch_size, num_points, 3), device=device)
-        if return_aux_img:
-          aux_img_output = torch.zeros((batch_size, num_points, 3), device=device)
-        pitch_list = []
-        yaw_list = []
-        for b in range(batch_size):
-          transformed_points, \
-          transformed_ray_directions_expanded, \
-          transformed_ray_origins, \
-          transformed_ray_directions, \
-          z_vals, \
-          pitch, \
-          yaw = comm_utils.get_world_points_and_direction(
-            batch_size=1,
-            num_steps=num_steps,
-            img_size=img_size,
-            fov=fov,
-            ray_start=ray_start,
-            ray_end=ray_end,
-            h_stddev=h_stddev,
-            v_stddev=v_stddev,
-            h_mean=h_mean,
-            v_mean=v_mean,
-            sample_dist=sample_dist,
-            lock_view_dependence=lock_view_dependence,
-            device=device,
-            camera_pos=camera_pos,
-            camera_lookup=camera_lookup,
-          )
-          pitch_list.append(pitch)
-          yaw_list.append(yaw)
+        batch_size = rays_o.shape[0]
+        num_points = rays_o.shape[1]
 
-          transformed_points = rearrange(transformed_points, "b (h w s) c -> b (h w) s c", h=img_size, s=num_steps)
-          transformed_ray_directions_expanded = rearrange(transformed_ray_directions_expanded,
-                                                          "b (h w s) c -> b (h w) s c", h=img_size, s=num_steps)
+        near = nerf_kwargs['near']
+        far = nerf_kwargs['far']
+        N_samples = nerf_kwargs['N_samples']
+        perturb = self.training
+        z_vals, points = volume_rendering.ray_sample_points(rays_o=rays_o,
+                                                            rays_d=rays_d,
+                                                            near=near,
+                                                            far=far,
+                                                            N_samples=N_samples,
+                                                            perturb=perturb)
+
+        batch_image_ddict = collections.defaultdict(list)
+        for b in range(batch_size):
+          image_ddict = collections.defaultdict(list)
+
           head = 0
           while head < num_points:
             tail = head + forward_points
             cur_style_dict = self.get_batch_style_dict(b=b, style_dict=style_dict)
-            cur_inr_img, cur_aux_img = self.points_forward(
+
+            cur_inr_img, cur_ret_maps = self.points_forward(
+              rays_o=rays_o[[b], head:tail], # (b, hxw, 3)
+              rays_d=rays_d[[b], head:tail], # (b, hxw, 3)
+              points=points[[b], head:tail], # (b, hxw, Nsamples, 3)
+              z_vals=z_vals[[b], head:tail], # (b, hxw, Nsamples)
               style_dict=cur_style_dict,
-              transformed_points=transformed_points[:, head:tail],
-              transformed_ray_directions_expanded=transformed_ray_directions_expanded[:, head:tail],
-              num_steps=num_steps,
-              hierarchical_sample=hierarchical_sample,
-              z_vals=z_vals[:, head:tail],
-              clamp_mode=clamp_mode,
-              nerf_noise=nerf_noise,
-              transformed_ray_origins=transformed_ray_origins[:, head:tail],
-              transformed_ray_directions=transformed_ray_directions[:, head:tail],
-              white_back=white_back,
-              last_back=last_back,
-              return_aux_img=return_aux_img,
-            )
-            inr_img_output[b:b + 1, head:tail] = cur_inr_img
-            if return_aux_img:
-              aux_img_output[b:b + 1, head:tail] = cur_aux_img
+              nerf_kwargs=nerf_kwargs,
+              return_aux_img=return_aux_img)
+
+            image_ddict['inr_img'].append(cur_inr_img)
+            for k, v in cur_ret_maps.items():
+              image_ddict[k].append(v)
             head += forward_points
-        inr_img = inr_img_output
-        if return_aux_img:
-          aux_img = aux_img_output
-        pitch = torch.cat(pitch_list, dim=0)
-        yaw = torch.cat(yaw_list, dim=0)
+          for k, v in image_ddict.items():
+            one_image = torch.cat(v, dim=1)
+            batch_image_ddict[k].append(one_image)
+        ret_maps = {}
+        for k, v in batch_image_ddict.items():
+          ret_maps[k] = torch.cat(v, dim=0)
+        imgs = ret_maps.pop('inr_img')
+
     else:
       near = nerf_kwargs['near']
       far = nerf_kwargs['far']

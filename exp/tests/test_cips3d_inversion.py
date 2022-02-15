@@ -64,7 +64,7 @@ class Testing_ffhq_diffcam_exp(unittest.TestCase):
 
     dd['properties'] = {'title': title,
                         # 'xlim': [0, 3000000],
-                        # 'ylim': [0, 100]
+                        'ylim': [0, 50]
                         }
     default_dicts[title] = dd
     show_max.append(False)
@@ -101,7 +101,7 @@ class Testing_ffhq_diffcam_exp(unittest.TestCase):
     :return:
     """
     if 'CUDA_VISIBLE_DEVICES' not in os.environ:
-      os.environ['CUDA_VISIBLE_DEVICES'] = '1'
+      os.environ['CUDA_VISIBLE_DEVICES'] = '0'
     if 'TIME_STR' not in os.environ:
       os.environ['TIME_STR'] = '0'
     if 'RUN_NUM' not in os.environ:
