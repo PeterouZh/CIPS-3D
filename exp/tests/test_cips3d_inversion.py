@@ -179,6 +179,18 @@ class Testing_ffhq_diffcam_exp(unittest.TestCase):
     G.eval()
     zs = G.get_zs(num_imgs)
 
+    with torch.set_grad_enabled(True):
+      imgs, ret_imgs = G(zs=zs,
+                         rays_o=rays_o,
+                         rays_d=rays_d,
+                         grad_points=32**2,
+                         forward_points=None,  # disable gradients
+                         return_aux_img=True,
+                         **metadata)
+    img = make_grid(imgs, nrow=2, normalize=True, scale_each=True)
+    img_pil = tv_f.to_pil_image(img)
+    pil_utils.imshow_pil(img_pil, f"grad_points {imgs.shape}")
+
     with torch.set_grad_enabled(False):
       imgs, ret_imgs = G(zs=zs,
                          rays_o=rays_o,
@@ -200,7 +212,7 @@ class Testing_ffhq_diffcam_exp(unittest.TestCase):
                          **metadata)
     img = make_grid(imgs, nrow=2, normalize=True, scale_each=True)
     img_pil = tv_f.to_pil_image(img)
-    pil_utils.imshow_pil(img_pil, imgs.shape)
+    pil_utils.imshow_pil(img_pil, f"whole {imgs.shape}")
 
     pass
 

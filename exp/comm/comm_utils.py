@@ -282,6 +282,62 @@ def gather_points(points,
   return sampled_points
 
 
+def batch_scatter_points(idx_grad,
+                         points_grad,
+                         idx_no_grad,
+                         points_no_grad,
+                         num_points):
+  """
+
+  :param idx_grad: (b, Ngrad)
+  :param points_grad: (b, N) or (b, N, c)
+  :param idx_no_grad:
+  :param points_no_grad:
+  :param num_points:
+  :return:
+  """
+  if points_grad.dim() == 2:
+    points_grad = points_grad.unsqueeze(-1)
+    points_no_grad = points_no_grad.unsqueeze(-1)
+
+  points_all = torch.zeros(points_grad.shape[0],
+                           num_points,
+                           points_grad.shape[-1],
+                           device=points_grad.device,
+                           dtype=points_grad.dtype)
+
+  idx_grad = rearrange(idx_grad, "b n -> b n 1")
+  idx_grad_out = idx_grad.expand(points_grad.shape[0], -1, points_grad.shape[-1])
+  points_all.scatter_(dim=1, index=idx_grad_out, src=points_grad)
+
+  idx_no_grad = rearrange(idx_no_grad, "b n -> b n 1")
+  idx_no_grad_out = idx_no_grad.expand(points_no_grad.shape[0], -1, points_no_grad.shape[-1])
+  points_all.scatter_(dim=1, index=idx_no_grad_out, src=points_no_grad)
+
+  points_all = points_all.squeeze(-1)
+  return points_all
+
+def batch_gather_points(points,
+                        idx_grad):
+  """
+
+  :param points: (b, n, c) or (b, n, s, c)
+  :param idx_grad: (b, Ngrad)
+  :return:
+  """
+  if points.dim() == 4:
+    idx_grad = rearrange(idx_grad, "b n -> b n 1 1")
+    idx_grad = idx_grad.expand(points.shape[0], -1, points.shape[-2], points.shape[-1])
+    sampled_points = torch.gather(points, dim=1, index=idx_grad, sparse_grad=True)
+  elif points.dim() == 3:
+    idx_grad = rearrange(idx_grad, "b n -> b n 1")
+    idx_grad = idx_grad.expand(points.shape[0], -1, points.shape[-1])
+    sampled_points = torch.gather(points, dim=1, index=idx_grad, sparse_grad=True)
+  else:
+    assert 0
+  return sampled_points
+
+
 def make_noise(batch,
                latent_dim,
                n_noise,

@@ -1327,29 +1327,13 @@ class Generator_Diffcam(GeneratorNerfINR_base):
     rays_d = rearrange(rays_d, "b h w c -> b (h w) c")
 
     if grad_points is not None and grad_points < h * w:
-      raise NotImplementedError
-
-      imgs, pitch_yaw = self.part_grad_forward(
+      imgs, ret_maps = self.part_grad_forward(
+        rays_o=rays_o,
+        rays_d=rays_d,
         style_dict=style_dict,
-        img_size=img_size,
-        fov=fov,
-        ray_start=ray_start,
-        ray_end=ray_end,
-        num_steps=num_steps,
-        h_stddev=h_stddev,
-        v_stddev=v_stddev,
-        h_mean=h_mean,
-        v_mean=v_mean,
-        hierarchical_sample=hierarchical_sample,
-        sample_dist=sample_dist,
-        lock_view_dependence=lock_view_dependence,
-        clamp_mode=clamp_mode,
-        nerf_noise=nerf_noise,
-        white_back=white_back,
-        last_back=last_back,
+        nerf_kwargs=nerf_kwargs,
         return_aux_img=return_aux_img,
-        grad_points=grad_points,
-      )
+        grad_points=grad_points)
 
     else:
       imgs, ret_maps = self.whole_grad_forward(
@@ -1498,127 +1482,76 @@ class Generator_Diffcam(GeneratorNerfINR_base):
     return imgs, ret_maps
 
   def part_grad_forward(self,
+                        rays_o,
+                        rays_d,
                         style_dict,
-                        img_size,
-                        fov,
-                        ray_start,
-                        ray_end,
-                        num_steps,
-                        h_stddev,
-                        v_stddev,
-                        h_mean,
-                        v_mean,
-                        hierarchical_sample,
-                        sample_dist=None,
-                        lock_view_dependence=False,
-                        clamp_mode='relu',
-                        nerf_noise=0.,
-                        white_back=False,
-                        last_back=False,
-                        return_aux_img=True,
-                        grad_points=None,
-                        camera_pos=None,
-                        camera_lookup=None,
-                        ):
+                        nerf_kwargs,
+                        return_aux_img,
+                        grad_points):
+
+    near = nerf_kwargs['near']
+    far = nerf_kwargs['far']
+    N_samples = nerf_kwargs['N_samples']
+    perturb = self.training
+    # z_vals: (b, hxw, Nsamples), points: (b, hxw, Nsamples, 3)
+    z_vals, points = volume_rendering.ray_sample_points(rays_o=rays_o, # (b, hxw, 3)
+                                                        rays_d=rays_d, # (b, hxw, 3)
+                                                        near=near,
+                                                        far=far,
+                                                        N_samples=N_samples,
+                                                        perturb=perturb)
+
+    # transformed_points = rearrange(transformed_points, "b (h w s) c -> b (h w) s c", h=img_size, s=num_steps)
+    # transformed_ray_directions_expanded = rearrange(transformed_ray_directions_expanded,
+    #                                                 "b (h w s) c -> b (h w) s c", h=img_size, s=num_steps)
+
+    batch_size = rays_o.shape[0]
+    num_points = rays_o.shape[1]
     device = self.device
-    batch_size = list(style_dict.values())[0].shape[0]
-    transformed_points, \
-    transformed_ray_directions_expanded, \
-    transformed_ray_origins, \
-    transformed_ray_directions, \
-    z_vals, \
-    pitch, \
-    yaw = comm_utils.get_world_points_and_direction(
-      batch_size=batch_size,
-      num_steps=num_steps,
-      img_size=img_size,
-      fov=fov,
-      ray_start=ray_start,
-      ray_end=ray_end,
-      h_stddev=h_stddev,
-      v_stddev=v_stddev,
-      h_mean=h_mean,
-      v_mean=v_mean,
-      sample_dist=sample_dist,
-      lock_view_dependence=lock_view_dependence,
-      device=device,
-      camera_pos=camera_pos,
-      camera_lookup=camera_lookup,
-    )
-
-    transformed_points = rearrange(transformed_points, "b (h w s) c -> b (h w) s c", h=img_size, s=num_steps)
-    transformed_ray_directions_expanded = rearrange(transformed_ray_directions_expanded,
-                                                    "b (h w s) c -> b (h w) s c", h=img_size, s=num_steps)
-
-    num_points = transformed_points.shape[1]
     assert num_points > grad_points
-    rand_idx = torch.randperm(num_points, device=device)
-    idx_grad = rand_idx[:grad_points]
-    idx_no_grad = rand_idx[grad_points:]
+    idx_grad, idx_no_grad = torch_utils.batch_random_split_indices(bs=batch_size,
+                                                                   num_points=num_points,
+                                                                   grad_points=grad_points,
+                                                                   device=device)
+    # rand_idx = torch.randperm(num_points, device=device)
+    # idx_grad = rand_idx[:grad_points]
+    # idx_no_grad = rand_idx[grad_points:]
 
-    inr_img_grad, aux_img_grad = self.points_forward(
-      style_dict=style_dict,
-      transformed_points=transformed_points,
-      transformed_ray_directions_expanded=transformed_ray_directions_expanded,
-      num_steps=num_steps,
-      hierarchical_sample=hierarchical_sample,
+    inr_img_grad, ret_maps_grad = self.points_forward(
+      rays_o=rays_o,
+      rays_d=rays_d,
+      points=points,
       z_vals=z_vals,
-      clamp_mode=clamp_mode,
-      nerf_noise=nerf_noise,
-      transformed_ray_origins=transformed_ray_origins,
-      transformed_ray_directions=transformed_ray_directions,
-      white_back=white_back,
-      last_back=last_back,
+      style_dict=style_dict,
+      nerf_kwargs=nerf_kwargs,
       return_aux_img=return_aux_img,
-      idx_grad=idx_grad,
-    )
+      idx_grad=idx_grad)
 
     with torch.no_grad():
-      inr_img_no_grad, aux_img_no_grad = self.points_forward(
-        style_dict=style_dict,
-        transformed_points=transformed_points,
-        transformed_ray_directions_expanded=transformed_ray_directions_expanded,
-        num_steps=num_steps,
-        hierarchical_sample=hierarchical_sample,
+      inr_img_no_grad, ret_maps_no_grad = self.points_forward(
+        rays_o=rays_o,
+        rays_d=rays_d,
+        points=points,
         z_vals=z_vals,
-        clamp_mode=clamp_mode,
-        nerf_noise=nerf_noise,
-        transformed_ray_origins=transformed_ray_origins,
-        transformed_ray_directions=transformed_ray_directions,
-        white_back=white_back,
-        last_back=last_back,
+        style_dict=style_dict,
+        nerf_kwargs=nerf_kwargs,
         return_aux_img=return_aux_img,
-        idx_grad=idx_no_grad,
-      )
+        idx_grad=idx_no_grad)
 
-    inr_img = comm_utils.scatter_points(idx_grad=idx_grad,
-                                        points_grad=inr_img_grad,
-                                        idx_no_grad=idx_no_grad,
-                                        points_no_grad=inr_img_no_grad,
-                                        num_points=num_points)
-
-    inr_img = rearrange(inr_img, "b (h w) c -> b c h w", h=img_size)
-    if global_cfg.tl_debug:
-      VerboseModel.forward_verbose(self.filters,
-                                   inputs_args=(inr_img,),
-                                   name_prefix="filters.")
-    inr_img = self.filters(inr_img)
-    pitch_yaw = torch.cat([pitch, yaw], -1)
-
-    if return_aux_img:
-      aux_img = comm_utils.scatter_points(idx_grad=idx_grad,
-                                          points_grad=aux_img_grad,
-                                          idx_no_grad=idx_no_grad,
-                                          points_no_grad=aux_img_no_grad,
-                                          num_points=num_points)
-      aux_img = rearrange(aux_img, "b (h w) c -> b c h w", h=img_size)
-
-      imgs = torch.cat([inr_img, aux_img])
-      pitch_yaw = torch.cat([pitch_yaw, pitch_yaw])
-    else:
-      imgs = inr_img
-
-    return imgs, pitch_yaw
+    imgs = comm_utils.batch_scatter_points(idx_grad=idx_grad,
+                                           points_grad=inr_img_grad,
+                                           idx_no_grad=idx_no_grad,
+                                           points_no_grad=inr_img_no_grad,
+                                           num_points=num_points)
+    ret_maps = {}
+    for k in ret_maps_grad.keys():
+      comp_map = comm_utils.batch_scatter_points(idx_grad=idx_grad,
+                                                 points_grad=ret_maps_grad[k],
+                                                 idx_no_grad=idx_no_grad,
+                                                 points_no_grad=ret_maps_no_grad[k],
+                                                 num_points=num_points)
+      ret_maps[k] = comp_map
+    return imgs, ret_maps
 
   def points_forward(self,
                      rays_o,
@@ -1632,22 +1565,16 @@ class Generator_Diffcam(GeneratorNerfINR_base):
                      **kwargs):
     """
 
+    :param rays_o: (b, hxw, 3)
+    :param rays_d: (b, hxw, 3)
+    :param points: (b, hxw, Nsamples, 3)
+    :param z_vals: (b, hxw, Nsamples)
     :param style_dict:
-    :param transformed_points: (b, n, s, 3)
-    :param transformed_ray_directions_expanded: (b, n, s, 3)
-    :param num_steps: sampled points along a ray
-    :param hierarchical_sample:
-    :param z_vals: (b, n, s, 1)
-    :param clamp_mode: 'relu'
-    :param nerf_noise:
-    :param transformed_ray_origins: (b, n, 3)
-    :param transformed_ray_directions: (b, n, 3)
-    :param white_back:
-    :param last_back:
-
-    :return
-
-
+    :param nerf_kwargs:
+    :param return_aux_img:
+    :param idx_grad: (b, N_grad, )
+    :param kwargs:
+    :return:
     """
 
     device = points.device
@@ -1657,13 +1584,11 @@ class Generator_Diffcam(GeneratorNerfINR_base):
     N_samples = nerf_kwargs['N_samples']
 
     if idx_grad is not None:
-      raise NotImplementedError
-      # transformed_points = comm_utils.gather_points(points=transformed_points, idx_grad=idx_grad)
-      # transformed_ray_directions_expanded = comm_utils.gather_points(
-      #   points=transformed_ray_directions_expanded, idx_grad=idx_grad)
-      # z_vals = comm_utils.gather_points(points=z_vals, idx_grad=idx_grad)
-      # transformed_ray_origins = comm_utils.gather_points(points=transformed_ray_origins, idx_grad=idx_grad)
-      # transformed_ray_directions = comm_utils.gather_points(points=transformed_ray_directions, idx_grad=idx_grad)
+      rays_o = comm_utils.batch_gather_points(points=rays_o, idx_grad=idx_grad)
+      rays_d = comm_utils.batch_gather_points(points=rays_d, idx_grad=idx_grad)
+      points = comm_utils.batch_gather_points(points=points, idx_grad=idx_grad)
+      z_vals = comm_utils.batch_gather_points(points=z_vals, idx_grad=idx_grad)
+
 
     points = rearrange(points, "b Nrays Nsamples c -> b (Nrays Nsamples) c")
     coarse_viewdirs = repeat(viewdirs, "b Nrays c -> b (Nrays Nsamples) c", Nsamples=N_samples)
