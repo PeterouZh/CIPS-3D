@@ -37,8 +37,8 @@ obs_inception_v3: &obs_inception_v3
 
 G_cfg_3D2D: &G_cfg_3D2D
   register_modules:
-  - exp.cips3d_inversion.models.generator
-  name: exp.cips3d_inversion.models.generator.Generator_Diffcam
+  - exp.cips3d_inversion.models.generator_v1
+  name: exp.cips3d_inversion.models.generator_v1.Generator_Diffcam
   z_dim: 256
   optim:
     lr: 0.0002
