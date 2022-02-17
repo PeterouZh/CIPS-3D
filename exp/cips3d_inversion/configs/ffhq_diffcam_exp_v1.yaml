@@ -35,45 +35,72 @@ obs_inception_v3: &obs_inception_v3
   unzip: false
 
 
+shape_net_cfg: &shape_net_cfg
+#  input_dim: 128
+  hidden_dim: 128
+  out_dim: 64
+  style_dim: 128
+  num_blocks: 3
+
+app_net_cfg: &app_net_cfg
+#  input_dim: 64
+  hidden_dim: 128
+  out_dim: 64
+  style_dim: 128
+  num_blocks: 3
+
+nerf_cfg: &nerf_cfg
+  scale_factor: 8
+  PEF_cfg:
+    N_freqs: 10
+    affine_dim: 16
+    xyz_affine: true
+  use_PEF: true
+  shape_net_cfg: *shape_net_cfg
+  app_net_cfg: *app_net_cfg
+
+mapping_shape_cfg: &mapping_shape_cfg
+  z_dim: 128
+  hidden_dim: 128
+  base_layers: 4
+  head_layers: 0
+  add_norm: true
+  norm_out: true
+
+mapping_app_cfg: &mapping_app_cfg
+  z_dim: 128
+  hidden_dim: 128
+  base_layers: 4
+  head_layers: 0
+  add_norm: true
+  norm_out: true
+
+inr_cfg: &inr_cfg
+#  input_dim: 128
+  hidden_dim: 512
+  out_dim: 3
+  style_dim: 512
+  num_blocks: 5
+
+mapping_inr_cfg: &mapping_inr_cfg
+  z_dim: 512
+  hidden_dim: 512
+  base_layers: 8
+  head_layers: 0
+  add_norm: true
+  norm_out: true
+
 G_cfg_3D2D: &G_cfg_3D2D
   register_modules:
   - exp.cips3d_inversion.models.generator_v1
   name: exp.cips3d_inversion.models.generator_v1.Generator_Diffcam
-  z_dim: 256
-  optim:
-    lr: 0.0002
-    equal_lr: 0.001
-  nerf_cfg:
-    in_dim: 3
-#    hidden_dim: 256
-    hidden_dim: 128
-    hidden_layers: 2
-    rgb_dim: 32
-#    style_dim: 256
-    style_dim: 128
-  mapping_nerf_cfg:
-    z_dim: 256
-#    hidden_dim: 256
-    hidden_dim: 128
-    base_layers: 4
-    head_layers: 0
-  inr_cfg:
-    input_dim: 32
-#    style_dim: 256
-#    hidden_dim: 256
-    style_dim: 512
-    hidden_dim: 512
-#    pre_rgb_dim: 32
-    pre_rgb_dim: 3
-  mapping_inr_cfg:
-    z_dim: 512
-#    hidden_dim: 256
-    hidden_dim: 512
-#    base_layers: 4
-    base_layers: 8
-    head_layers: 0
-    add_norm: true
-    norm_out: true
+  nerf_cfg: *nerf_cfg
+  mapping_shape_cfg: *mapping_shape_cfg
+  mapping_app_cfg: *mapping_app_cfg
+  inr_cfg: *inr_cfg
+  mapping_inr_cfg: *mapping_inr_cfg
+  inr_block_end_index: 1
+
 
 G_kwargs: &G_kwargs
   psi: 1.

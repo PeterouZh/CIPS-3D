@@ -23,6 +23,9 @@ from tl2.proj.pytorch import torch_utils, init_func
 from tl2 import tl2_utils
 from tl2.proj.pytorch.examples.nerf import cam_params
 from tl2.proj.pytorch.examples.nerf import volume_rendering
+from tl2.proj.pytorch.examples.networks import nerf_net
+from tl2.proj.pytorch.examples.networks import multi_head_mapping
+from tl2.proj.pytorch.examples.networks import cips_net
 
 from exp.pigan import pigan_utils
 from exp.dev.nerf_inr.models.generator_nerf_inr import INRNetwork
@@ -32,7 +35,7 @@ from exp.comm.models import nerf_network
 from exp.comm.models import inr_network
 from exp.comm.models import film_layer
 from exp.comm.models import mod_conv_fc
-from exp.cips3d.models import multi_head_mapping
+# from exp.cips3d.models import multi_head_mapping
 
 
 class SkipLayer(nn.Module):
@@ -148,460 +151,6 @@ class FiLMLayer(nn.Module):
         f'use_style_fc={self.use_style_fc}, ' \
         f')'
     return s
-
-
-# @MODEL_REGISTRY.register(name_prefix=__name__)
-class NeRFNetwork(nn.Module):
-  """Same architecture as TALLSIREN but adds a UniformBoxWarp to map input points to -1, 1"""
-
-  def __repr__(self):
-    return tl2_utils.get_class_repr(self)
-
-  def __init__(self,
-               in_dim=3,
-               hidden_dim=256,
-               hidden_layers=2,
-               style_dim=512,
-               rgb_dim=3,
-               device=None,
-               name_prefix='nerf',
-               **kwargs):
-    """
-
-    :param z_dim:
-    :param hidden_dim:
-    :param rgb_dim:
-    :param device:
-    :param kwargs:
-    """
-    super().__init__()
-
-    self.repr_str = tl2_utils.dict2string(dict_obj={
-      'in_dim': in_dim,
-      'hidden_dim': hidden_dim,
-      'hidden_layers': hidden_layers,
-      'style_dim': style_dim,
-      'rgb_dim': rgb_dim,
-    })
-
-    self.device = device
-    self.in_dim = in_dim
-    self.hidden_dim = hidden_dim
-    self.rgb_dim = rgb_dim
-    self.style_dim = style_dim
-    self.hidden_layers = hidden_layers
-    self.name_prefix = name_prefix
-
-    # self.xyz_emb = pigan_utils.PosEmbedding(max_logscale=9, N_freqs=10)
-    # dim_xyz_emb = self.xyz_emb.get_out_dim()
-    # self.dir_emb = pigan_utils.PosEmbedding(max_logscale=3, N_freqs=4)
-    # dim_dir_emb = self.dir_emb.get_out_dim()
-
-    self.module_name_list = []
-
-    self.style_dim_dict = {}
-
-    # self.network = nn.ModuleList([
-    #   FiLMLayer(3, hidden_dim),
-    #   # FiLMLayer(dim_xyz_emb, hidden_dim),
-    #   FiLMLayer(hidden_dim, hidden_dim),
-    #   # FiLMLayer(hidden_dim, hidden_dim),
-    #   # FiLMLayer(hidden_dim, hidden_dim),
-    #   # FiLMLayer(hidden_dim, hidden_dim),
-    #   # FiLMLayer(hidden_dim, hidden_dim),
-    #   # FiLMLayer(hidden_dim, hidden_dim),
-    #   # FiLMLayer(hidden_dim, hidden_dim),
-    # ])
-
-    self.network = nn.ModuleList()
-    self.module_name_list.append('network')
-    _out_dim = in_dim
-    for idx in range(hidden_layers):
-      _in_dim = _out_dim
-      _out_dim = hidden_dim
-
-      _layer = film_layer.FiLMLayer(in_dim=_in_dim, out_dim=_out_dim, style_dim=style_dim, use_style_fc=True)
-
-      self.network.append(_layer)
-      self.style_dim_dict[f'{name_prefix}_w{idx}'] = _layer.style_dim
-
-    self.final_layer = nn.Linear(hidden_dim, 1)
-    # self.final_layer.apply(frequency_init(25))
-    self.module_name_list.append('final_layer')
-
-    _in_dim= hidden_dim
-    _out_dim = hidden_dim // 2
-    self.color_layer_sine = film_layer.FiLMLayer(in_dim=_in_dim, out_dim=_out_dim, style_dim=style_dim, use_style_fc=True)
-    # self.color_layer_sine = FiLMLayer(in_dim=_in_dim, out_dim=_out_dim, style_dim=style_dim, use_style_fc=True)
-    self.style_dim_dict[f'{name_prefix}_rgb'] = self.color_layer_sine.style_dim
-    self.module_name_list.append('color_layer_sine')
-
-    self.color_layer_linear = nn.Sequential(
-      nn.Linear(_out_dim, rgb_dim),
-      # nn.LeakyReLU(0.2, inplace=True),
-      # nn.Sigmoid()
-    )
-    # self.color_layer_linear.apply(frequency_init(25))
-    self.color_layer_linear.apply(init_func.kaiming_leaky_init)
-    self.module_name_list.append('color_layer_linear')
-
-    self.dim_styles = sum(self.style_dim_dict.values())
-
-    # Don't worry about this, it was added to ensure compatibility with another model.
-    # Shouldn't affect performance.
-    self.gridwarper = nerf_network.UniformBoxWarp(0.24)
-
-    logger = logging.getLogger('tl')
-    models_dict = {}
-    for name in self.module_name_list:
-      models_dict[name] = getattr(self, name)
-    models_dict['nerf'] = self
-    torch_utils.print_number_params(models_dict=models_dict, logger=logger)
-    logger.info(self)
-    pass
-
-  def forward_with_frequencies_phase_shifts(self,
-                                            input,
-                                            style_dict,
-                                            **kwargs):
-    """
-
-    :param input: (b, n, 3)
-    :param style_dict:
-    :param ray_directions:
-    :param kwargs:
-    :return:
-    """
-
-    if global_cfg.tl_debug:
-      VerboseModel.forward_verbose(nn.Sequential(
-        OrderedDict([
-          ('gridwarper', self.gridwarper),
-          # ('xyz_emb', self.xyz_emb),
-        ])),
-        inputs_args=(input,),
-        name_prefix="xyz.")
-
-    # scale xyz
-    # input = self.gridwarper(input)
-
-    # xyz_emb = self.xyz_emb(input)
-    # x = xyz_emb
-    x = input
-
-    for index, layer in enumerate(self.network):
-      style = style_dict[f'{self.name_prefix}_w{index}']
-
-      if global_cfg.tl_debug:
-        VerboseModel.forward_verbose(layer,
-                                     inputs_args=(x, style),
-                                     name_prefix=f"network.{index}.")
-      x = layer(x, style)
-
-    if global_cfg.tl_debug:
-      VerboseModel.forward_verbose(self.final_layer,
-                                   inputs_args=(x,),
-                                   name_prefix="final_layer")
-    sigma = self.final_layer(x)
-
-    # rgb branch
-    style = style_dict[f'{self.name_prefix}_rgb']
-    if global_cfg.tl_debug:
-      VerboseModel.forward_verbose(self.color_layer_sine,
-                                   inputs_args=(x, style),
-                                   name_prefix=f"color_layer_sine.")
-    x = self.color_layer_sine(x, style)
-
-    if global_cfg.tl_debug:
-      VerboseModel.forward_verbose(self.color_layer_linear,
-                                   inputs_args=(x,),
-                                   name_prefix='color_layer_linear.')
-    # rbg = torch.sigmoid(self.color_layer_linear(rbg))
-    rbg = self.color_layer_linear(x)
-
-    out = torch.cat([rbg, sigma], dim=-1)
-    return out
-
-  def forward(self,
-              input,
-              style_dict,
-              ray_directions,
-              **kwargs):
-    """
-
-    :param input: points xyz, (b, num_points, 3)
-    :param style_dict:
-    :param ray_directions: (b, num_points, 3)
-    :param kwargs:
-    :return:
-    - out: (b, num_points, 4), rgb(3) + sigma(1)
-    """
-
-    out = self.forward_with_frequencies_phase_shifts(
-      input=input,
-      style_dict=style_dict,
-      ray_directions=ray_directions,
-      **kwargs)
-
-    return out
-
-  def print_number_params(self):
-    print()
-
-    pass
-
-  def get_freq_phase(self, style_dict, name):
-    styles = style_dict[name]
-    styles = rearrange(styles, "b (n d) -> b d n", n=2)
-    frequencies, phase_shifts = styles.unbind(-1)
-    frequencies = frequencies * 15 + 30
-    return frequencies, phase_shifts
-
-  def staged_forward(self,
-                     transformed_points,
-                     transformed_ray_directions_expanded,
-                     style_dict,
-                     max_points,
-                     num_steps,
-                     ):
-
-    batch_size, num_points, _ = transformed_points.shape
-
-    rgb_sigma_output = torch.zeros((batch_size, num_points, self.rgb_dim + 1),
-                                   device=self.device)
-    for b in range(batch_size):
-      head = 0
-      while head < num_points:
-        tail = head + max_points
-        rgb_sigma_output[b:b + 1, head:tail] = self(
-          input=transformed_points[b:b + 1, head:tail],  # (b, h x w x s, 3)
-          style_dict={name: style[b:b + 1] for name, style in style_dict.items()},
-          ray_directions=transformed_ray_directions_expanded[b:b + 1, head:tail])
-        head += max_points
-    rgb_sigma_output = rearrange(rgb_sigma_output, "b (hw s) rgb_sigma -> b hw s rgb_sigma", s=num_steps)
-    return rgb_sigma_output
-
-
-
-@MODEL_REGISTRY.register(name_prefix=__name__)
-class NeRFNetwork_sigma(nn.Module):
-  """Same architecture as TALLSIREN but adds a UniformBoxWarp to map input points to -1, 1"""
-
-  def __repr__(self): return f"{self.__class__.__name__}({self.repr})"
-
-  def __init__(self,
-               in_dim=3,
-               hidden_dim=256,
-               hidden_layers=2,
-               style_dim=512,
-               rgb_dim=3,
-               device=None,
-               name_prefix='nerf',
-               **kwargs):
-    """
-
-    :param z_dim:
-    :param hidden_dim:
-    :param rgb_dim:
-    :param device:
-    :param kwargs:
-    """
-    super().__init__()
-
-    self.repr = f"in_dim={in_dim}, " \
-                f"hidden_dim={hidden_dim}, " \
-                f"hidden_layers={hidden_layers}, " \
-                f"style_dim={style_dim}, " \
-                f"rgb_dim={rgb_dim}, " \
-
-    self.device = device
-    self.in_dim = in_dim
-    self.hidden_dim = hidden_dim
-    self.rgb_dim = rgb_dim
-    self.style_dim = style_dim
-    self.hidden_layers = hidden_layers
-    self.name_prefix = name_prefix
-
-    # self.xyz_emb = pigan_utils.PosEmbedding(max_logscale=9, N_freqs=10)
-    # dim_xyz_emb = self.xyz_emb.get_out_dim()
-    # self.dir_emb = pigan_utils.PosEmbedding(max_logscale=3, N_freqs=4)
-    # dim_dir_emb = self.dir_emb.get_out_dim()
-
-    self.style_dim_dict = {}
-
-    # self.network = nn.ModuleList([
-    #   FiLMLayer(3, hidden_dim),
-    #   # FiLMLayer(dim_xyz_emb, hidden_dim),
-    #   FiLMLayer(hidden_dim, hidden_dim),
-    #   # FiLMLayer(hidden_dim, hidden_dim),
-    #   # FiLMLayer(hidden_dim, hidden_dim),
-    #   # FiLMLayer(hidden_dim, hidden_dim),
-    #   # FiLMLayer(hidden_dim, hidden_dim),
-    #   # FiLMLayer(hidden_dim, hidden_dim),
-    #   # FiLMLayer(hidden_dim, hidden_dim),
-    # ])
-
-    self.network = nn.ModuleList()
-    _out_dim = in_dim
-    for idx in range(hidden_layers):
-      _in_dim = _out_dim
-      _out_dim = hidden_dim
-      if True:
-        _layer = film_layer.FiLMLayer(in_dim=_in_dim, out_dim=_out_dim, style_dim=style_dim, use_style_fc=True)
-      else:
-        _layer = FiLMLayer(in_dim=_in_dim, out_dim=_out_dim, style_dim=style_dim, use_style_fc=True)
-      self.network.append(_layer)
-      self.style_dim_dict[f'{name_prefix}_w{idx}'] = _layer.style_dim
-
-    self.final_layer = nn.Linear(hidden_dim, 1)
-    # self.final_layer.apply(frequency_init(25))
-
-    _in_dim= 3
-    _out_dim = hidden_dim // 2
-    # self.color_layer_sine = film_layer.FiLMLayer(in_dim=_in_dim, out_dim=_out_dim, style_dim=style_dim, use_style_fc=True)
-    # self.color_layer_sine = FiLMLayer(in_dim=_in_dim, out_dim=_out_dim, style_dim=style_dim, use_style_fc=True)
-    # self.style_dim_dict[f'{name_prefix}_rgb'] = self.color_layer_sine.style_dim
-    self.color_layer_sine = LinearSinAct(in_features=_in_dim, out_features=_out_dim)
-
-    self.color_layer_linear = nn.Sequential(
-      nn.Linear(_out_dim, rgb_dim),
-      # nn.Sigmoid()
-    )
-    # self.color_layer_linear.apply(frequency_init(25))
-    self.color_layer_linear.apply(init_func.kaiming_leaky_init)
-
-    self.dim_styles = sum(self.style_dim_dict.values())
-
-    # Don't worry about this, it was added to ensure compatibility with another model.
-    # Shouldn't affect performance.
-    self.gridwarper = nerf_network.UniformBoxWarp(0.24)
-
-    torch_utils.print_number_params({
-      'network': self.network,
-      'final_layer': self.final_layer,
-      'color_layer_sine': self.color_layer_sine,
-      'color_layer_linear': self.color_layer_linear,
-      'nerf_net': self})
-    logging.getLogger('tl').info(self)
-    pass
-
-  def forward_with_frequencies_phase_shifts(self,
-                                            input,
-                                            style_dict,
-                                            **kwargs):
-    """
-
-    :param input: (b, n, 3)
-    :param style_dict:
-    :param ray_directions:
-    :param kwargs:
-    :return:
-    """
-
-    if global_cfg.tl_debug:
-      VerboseModel.forward_verbose(nn.Sequential(
-        OrderedDict([
-          ('gridwarper', self.gridwarper),
-          # ('xyz_emb', self.xyz_emb),
-        ])),
-        inputs_args=(input,),
-        name_prefix="xyz.")
-    input = self.gridwarper(input)
-    # xyz_emb = self.xyz_emb(input)
-    # x = xyz_emb
-    x = input
-
-    for index, layer in enumerate(self.network):
-      style = style_dict[f'{self.name_prefix}_w{index}']
-
-      if global_cfg.tl_debug:
-        VerboseModel.forward_verbose(layer,
-                                     inputs_args=(x, style),
-                                     name_prefix=f"network.{index}.")
-      x = layer(x, style)
-
-    if global_cfg.tl_debug:
-      VerboseModel.forward_verbose(self.final_layer,
-                                   inputs_args=(x,),
-                                   name_prefix="final_layer")
-    sigma = self.final_layer(x)
-
-    # rgb branch
-    # style = style_dict[f'{self.name_prefix}_rgb']
-    if global_cfg.tl_debug:
-      VerboseModel.forward_verbose(self.color_layer_sine,
-                                   inputs_args=(input, ),
-                                   name_prefix=f"color_layer_sine.")
-    x = self.color_layer_sine(input, )
-
-    if global_cfg.tl_debug:
-      VerboseModel.forward_verbose(self.color_layer_linear,
-                                   inputs_args=(x,),
-                                   name_prefix='color_layer_linear.')
-    # rbg = torch.sigmoid(self.color_layer_linear(rbg))
-    rbg = self.color_layer_linear(x)
-
-    out = torch.cat([rbg, sigma], dim=-1)
-    return out
-
-  def forward(self,
-              input,
-              style_dict,
-              ray_directions,
-              **kwargs):
-    """
-
-    :param input: points xyz, (b, num_points, 3)
-    :param style_dict:
-    :param ray_directions: (b, num_points, 3)
-    :param kwargs:
-    :return:
-    - out: (b, num_points, 4), rgb(3) + sigma(1)
-    """
-
-    out = self.forward_with_frequencies_phase_shifts(
-      input=input,
-      style_dict=style_dict,
-      ray_directions=ray_directions,
-      **kwargs)
-
-    return out
-
-  def print_number_params(self):
-    print()
-
-    pass
-
-  def get_freq_phase(self, style_dict, name):
-    styles = style_dict[name]
-    styles = rearrange(styles, "b (n d) -> b d n", n=2)
-    frequencies, phase_shifts = styles.unbind(-1)
-    frequencies = frequencies * 15 + 30
-    return frequencies, phase_shifts
-
-  def staged_forward(self,
-                     transformed_points,
-                     transformed_ray_directions_expanded,
-                     style_dict,
-                     max_points,
-                     num_steps,
-                     ):
-
-    batch_size, num_points, _ = transformed_points.shape
-
-    rgb_sigma_output = torch.zeros((batch_size, num_points, self.rgb_dim + 1),
-                                   device=self.device)
-    for b in range(batch_size):
-      head = 0
-      while head < num_points:
-        tail = head + max_points
-        rgb_sigma_output[b:b + 1, head:tail] = self(
-          input=transformed_points[b:b + 1, head:tail],  # (b, h x w x s, 3)
-          style_dict={name: style[b:b + 1] for name, style in style_dict.items()},
-          ray_directions=transformed_ray_directions_expanded[b:b + 1, head:tail])
-        head += max_points
-    rgb_sigma_output = rearrange(rgb_sigma_output, "b (hw s) rgb_sigma -> b hw s rgb_sigma", s=num_steps)
-    return rgb_sigma_output
 
 
 class INRNetwork_Skip(nn.Module):
@@ -1012,216 +561,80 @@ class ToRGB(nn.Module):
     return out
 
 
-class CIPSNet(nn.Module):
-  def __repr__(self):
-    return tl2_utils.get_class_repr(self)
-
-  def __init__(self,
-               input_dim,
-               style_dim,
-               hidden_dim=256,
-               pre_rgb_dim=32,
-               device=None,
-               name_prefix='inr',
-               **kwargs):
-    """
-
-    :param input_dim:
-    :param style_dim:
-    :param hidden_dim:
-    :param pre_rgb_dim:
-    :param device:
-    :param name_prefix:
-    :param kwargs:
-    """
-    super().__init__()
-
-    self.repr_str = tl2_utils.dict2string(dict_obj={
-      'input_dim': input_dim,
-      'style_dim': style_dim,
-      'hidden_dim': hidden_dim,
-      'pre_rgb_dim': pre_rgb_dim,
-    })
-
-    self.device = device
-    self.pre_rgb_dim = pre_rgb_dim
-    self.name_prefix = name_prefix
-
-    self.channels = {
-      "4": hidden_dim,
-      "8": hidden_dim,
-      "16": hidden_dim,
-      "32": hidden_dim,
-      "64": hidden_dim,
-      "128": hidden_dim,
-      "256": hidden_dim,
-      "512": hidden_dim,
-      "1024": hidden_dim,
-    }
-
-    self.module_name_list = []
-
-    self.style_dim_dict = {}
-
-    _out_dim = input_dim
-
-    network = OrderedDict()
-    to_rbgs = OrderedDict()
-    for i, (name, channel) in enumerate(self.channels.items()):
-      _in_dim = _out_dim
-      _out_dim = channel
-
-      if name.startswith(('none', )):
-        _linear_block = inr_network.LinearBlock(
-          in_dim=_in_dim, out_dim=_out_dim, name_prefix=f'{name_prefix}_{name}')
-        network[name] = _linear_block
-      else:
-        _film_block = SinBlock(in_dim=_in_dim,
-                               out_dim=_out_dim,
-                               style_dim=style_dim,
-                               name_prefix=f'{name_prefix}_w{name}')
-        self.style_dim_dict.update(_film_block.style_dim_dict)
-        network[name] = _film_block
-
-      _to_rgb = ToRGB(in_dim=_out_dim, dim_rgb=pre_rgb_dim, use_equal_fc=False)
-      to_rbgs[name] = _to_rgb
-
-    self.network = nn.ModuleDict(network)
-    self.to_rgbs = nn.ModuleDict(to_rbgs)
-    self.to_rgbs.apply(inr_network.frequency_init(100))
-    self.module_name_list.append('network')
-    self.module_name_list.append('to_rgbs')
-
-    out_layers = []
-    if pre_rgb_dim > 3:
-      out_layers.append(nn.Linear(pre_rgb_dim, 3))
-    out_layers.append(nn.Tanh())
-    self.tanh = nn.Sequential(*out_layers)
-    # self.tanh.apply(init_func.kaiming_leaky_init)
-    self.tanh.apply(inr_network.frequency_init(100))
-    self.module_name_list.append('tanh')
-
-    models_dict = {}
-    for name in self.module_name_list:
-      models_dict[name] = getattr(self, name)
-    models_dict['cips'] = self
-    logger = logging.getLogger('tl')
-    torch_utils.print_number_params(models_dict=models_dict, logger=logger)
-    logger.info(self)
-    pass
-
-  def forward(self,
-              input,
-              style_dict,
-              img_size=1024,
-              **kwargs):
-    """
-
-    :param input: points xyz, (b, num_points, 3)
-    :param style_dict:
-    :param ray_directions: (b, num_points, 3)
-    :param kwargs:
-    :return:
-    - out: (b, num_points, 4), rgb(3) + sigma(1)
-    """
-
-    x = input
-    img_size = str(2 ** int(np.log2(img_size)))
-
-    rgb = 0
-    for idx, (name, block) in enumerate(self.network.items()):
-      # skip = int(name) >= 32
-      if idx >= 4:
-        skip = True
-      else:
-        skip = False
-      if global_cfg.tl_debug:
-        VerboseModel.forward_verbose(block,
-                                     inputs_args=(x, style_dict, skip),
-                                     submodels=['mod1', 'mod2'],
-                                     name_prefix=f'block.{name}.')
-      x = block(x, style_dict, skip=skip)
-
-      if idx >= 3:
-        if global_cfg.tl_debug:
-          VerboseModel.forward_verbose(self.to_rgbs[name],
-                                       inputs_args=(x, rgb),
-                                       name_prefix=f'to_rgb.{name}.')
-        rgb = self.to_rgbs[name](x, skip=rgb)
-
-      if name == img_size:
-        break
-
-    if global_cfg.tl_debug:
-      VerboseModel.forward_verbose(self.tanh,
-                                   inputs_args=(rgb, ),
-                                   name_prefix='tanh.')
-    out = self.tanh(rgb)
-    return out
-
-
-
 @MODEL_REGISTRY.register(name_prefix=__name__)
-class Generator_Diffcam(GeneratorNerfINR_base):
+# class Generator_Diffcam(GeneratorNerfINR_base):
+class Generator_Diffcam(nn.Module):
 
   def __repr__(self):
     return tl2_utils.get_class_repr(self)
 
   def __init__(self,
-               z_dim,
                nerf_cfg,
-               mapping_nerf_cfg,
+               mapping_shape_cfg,
+               mapping_app_cfg,
                inr_cfg,
                mapping_inr_cfg,
+               inr_block_end_index=None,
                device='cuda',
                **kwargs):
-    super(GeneratorNerfINR_base, self).__init__()
+    super(Generator_Diffcam, self).__init__()
 
     self.repr_str = tl2_utils.dict2string(dict_obj={
-      'z_dim': z_dim,
       'nerf_cfg': nerf_cfg,
-      'mapping_nerf_cfg': mapping_nerf_cfg,
+      'mapping_shape_cfg': mapping_shape_cfg,
+      'mapping_app_cfg': mapping_app_cfg,
       'inr_cfg': inr_cfg,
       'mapping_inr_cfg': mapping_inr_cfg,
+      'inr_block_end_index': inr_block_end_index,
     })
 
-    self.z_dim = z_dim
     self.device = device
+    self.inr_block_end_index = inr_block_end_index
 
     self.module_name_list = []
-    # nerf_net
-    self.siren = NeRFNetwork(**nerf_cfg)
-    self.module_name_list.append('siren')
 
-    shape_style_dict = self.siren.style_dim_dict
-    color_style_dict = {
-      'nerf_rgb': shape_style_dict.pop('nerf_rgb')
-    }
-    self.mapping_network_nerf = multi_head_mapping.MultiHeadMappingNetwork(
-      **{**mapping_nerf_cfg, 'head_dim_dict': shape_style_dict})
-    self.module_name_list.append('mapping_network_nerf')
+    # nerf_net
+    self.nerf_net = nerf_net.NeRFNetwork_CIPS(**nerf_cfg)
+    self.module_name_list.append('nerf_net')
+
+    # mapping shape
+    self.mapping_shape = multi_head_mapping.MultiHeadMappingNetwork(**{
+      **mapping_shape_cfg,
+      'head_dim_dict': self.nerf_net.style_dim_dict_shape
+    })
+    self.module_name_list.append('mapping_shape')
+
+    # mapping appearance
+    self.mapping_app = multi_head_mapping.MultiHeadMappingNetwork(**{
+      **mapping_app_cfg,
+      'head_dim_dict': self.nerf_net.style_dim_dict_app
+    })
+    self.module_name_list.append('mapping_app')
+
+    _in_dim = nerf_cfg.app_net_cfg.out_dim
 
     # inr_net
-    self.inr_net = CIPSNet(**{**inr_cfg, "input_dim": self.siren.rgb_dim})
+    self.inr_net = cips_net.CIPSNet(**{
+      **inr_cfg,
+      "input_dim": _in_dim,
+      'add_out_layer': True,
+    })
     self.module_name_list.append('inr_net')
 
-    color_style_dict.update(self.inr_net.style_dim_dict)
-    self.mapping_network_inr = multi_head_mapping.MultiHeadMappingNetwork(
-      **{**mapping_inr_cfg, 'head_dim_dict': color_style_dict})
-    self.module_name_list.append('mapping_network_inr')
+    self.mapping_inr = multi_head_mapping.MultiHeadMappingNetwork(**{
+      **mapping_inr_cfg,
+      'head_dim_dict': self.inr_net.style_dim_dict
+    })
+    self.module_name_list.append('mapping_inr')
 
-    self.nerf_rgb_mapping = nn.Linear(in_features=mapping_inr_cfg['hidden_dim'],
-                                      out_features=color_style_dict['nerf_rgb'])
-    self.module_name_list.append('nerf_rgb_mapping')
 
     self.aux_to_rbg = nn.Sequential(
-      nn.Linear(self.siren.rgb_dim, 3),
+      nn.Linear(_in_dim, 3),
       nn.Tanh()
     )
     self.aux_to_rbg.apply(nerf_network.frequency_init(25))
     self.module_name_list.append('aux_to_rbg')
 
-    self.filters = nn.Identity()
 
     logger = logging.getLogger('tl')
     models_dict = {}
@@ -1233,64 +646,6 @@ class Generator_Diffcam(GeneratorNerfINR_base):
 
     pass
 
-  # def get_optimizer(self,
-  #                   lr,
-  #                   equal_lr,
-  #                   betas=(0, 0.999),
-  #                   weight_decay=0.):
-  #   optimizer = torch.optim.Adam(
-  #     [
-  #       {
-  #         'params': chain(
-  #           self.siren.parameters(),
-  #           self.mapping_network_nerf.parameters(),
-  #           self.mapping_network_inr.parameters(),
-  #           self.aux_to_rbg.parameters(),
-  #           self.filters.parameters(),
-  #         ),
-  #         'initial_lr': lr,
-  #         'lr': lr},
-  #       {
-  #         'params': chain(
-  #           self.inr_net.parameters(),
-  #         ),
-  #         'initial_lr': equal_lr,
-  #         'lr': equal_lr}
-  #     ],
-  #     betas=betas,
-  #     weight_decay=weight_decay)
-  #
-  #   num_params = 0
-  #   for group in optimizer.param_groups:
-  #     num_params += len(group['params'])
-  #   assert num_params == len(list(self.parameters()))
-  #   return optimizer
-
-  # def forward(self,
-  #             zs,
-  #             rays_o,
-  #             rays_d,
-  #             img_size,
-  #             fov,
-  #             ray_start,
-  #             ray_end,
-  #             num_steps,
-  #             h_stddev,
-  #             v_stddev,
-  #             hierarchical_sample,
-  #             h_mean=math.pi*0.5,
-  #             v_mean=math.pi*0.5,
-  #             psi=1,
-  #             sample_dist=None,
-  #             lock_view_dependence=False,
-  #             clamp_mode='relu',
-  #             nerf_noise=0.,
-  #             white_back=False,
-  #             last_back=False,
-  #             return_aux_img=False,
-  #             grad_points=None,
-  #             forward_points=None, # disable gradients
-  #             **kwargs):
   def forward(self,
               zs,
               rays_o,
@@ -1594,8 +949,8 @@ class Generator_Diffcam(GeneratorNerfINR_base):
     coarse_viewdirs = repeat(viewdirs, "b Nrays c -> b (Nrays Nsamples) c", Nsamples=N_samples)
 
     # Model prediction on course points
-    coarse_output = self.siren(
-      input=points,  # b (Nrays Nsamples) c
+    coarse_output = self.nerf_net(
+      x=points,  # b (Nrays Nsamples) c
       ray_directions=coarse_viewdirs, # b (Nrays Nsamples) c
       style_dict=style_dict)
     coarse_output = rearrange(
@@ -1621,8 +976,8 @@ class Generator_Diffcam(GeneratorNerfINR_base):
       fine_points = rearrange(fine_points, "b Nrays Nsamples c -> b (Nrays Nsamples) c")
       fine_viewdirs = repeat(viewdirs, "b Nrays c -> b (Nrays Nsamples) c", Nsamples=nerf_kwargs['N_importance'])
 
-      fine_output = self.siren(
-        input=fine_points,  # b (Nrays Nsamples) c
+      fine_output = self.nerf_net(
+        x=fine_points,  # b (Nrays Nsamples) c
         ray_directions=fine_viewdirs,  # b (Nrays Nsamples) c
         style_dict=style_dict)
       fine_output = rearrange(
@@ -1655,7 +1010,8 @@ class Generator_Diffcam(GeneratorNerfINR_base):
                                                             raw_noise_std=nerf_kwargs['raw_noise_std'],
                                                             eps=nerf_kwargs['eps'])
 
-    inr_img = self.inr_net(pixels_fea, style_dict)
+    # inr_net
+    inr_img = self.inr_net(pixels_fea, style_dict, block_end_index=self.inr_block_end_index)
 
     if return_aux_img:
       # aux rgb_branch
@@ -1674,56 +1030,75 @@ class Generator_Diffcam(GeneratorNerfINR_base):
       z = torch.rand(shape, device=device) * 2 - 1
     return z
 
-  def get_zs(self, b, batch_split=1):
-    z_nerf = self.z_sampler(shape=(b, self.mapping_network_nerf.z_dim), device=self.device)
-    z_inr = self.z_sampler(shape=(b, self.mapping_network_inr.z_dim), device=self.device)
+  def get_zs(self,
+             b,
+             batch_split=1):
+    z_shape = self.z_sampler(shape=(b, self.mapping_shape.z_dim), device=self.device)
+    z_app = self.z_sampler(shape=(b, self.mapping_app.z_dim), device=self.device)
+    z_inr = self.z_sampler(shape=(b, self.mapping_inr.z_dim), device=self.device)
 
     if batch_split > 1:
       zs_list = []
-      z_nerf_list = z_nerf.split(b // batch_split)
+      z_shape_list = z_shape.split(b // batch_split)
+      z_app_list = z_app.split(b // batch_split)
       z_inr_list = z_inr.split(b // batch_split)
-      for z_nerf_, z_inr_ in zip(z_nerf_list, z_inr_list):
+      for z_shape_, z_app_, z_inr_ in zip(z_shape_list, z_app_list, z_inr_list):
         zs_ = {
-          'z_nerf': z_nerf_,
+          'z_shape': z_shape_,
+          'z_app': z_app_,
           'z_inr': z_inr_,
         }
         zs_list.append(zs_)
       return zs_list
     else:
       zs = {
-        'z_nerf': z_nerf,
+        'z_shape': z_shape,
+        'z_app': z_app,
         'z_inr': z_inr,
       }
       return zs
 
   def mapping_network(self,
-                      z_nerf,
+                      z_shape,
+                      z_app,
                       z_inr):
     if global_cfg.tl_debug:
-      VerboseModel.forward_verbose(self.mapping_network_nerf,
-                                   inputs_args=(z_nerf,),
+      VerboseModel.forward_verbose(self.mapping_shape,
+                                   inputs_args=(z_shape,),
                                    submodels=['base_net'],
-                                   name_prefix='mapping_nerf.')
-      VerboseModel.forward_verbose(self.mapping_network_inr,
+                                   name_prefix='mapping_shape.')
+      VerboseModel.forward_verbose(self.mapping_app,
+                                   inputs_args=(z_app,),
+                                   submodels=['base_net'],
+                                   name_prefix='mapping_app.')
+      VerboseModel.forward_verbose(self.mapping_inr,
                                    inputs_args=(z_inr,),
                                    submodels=['base_net', ],
                                    input_padding=50,
                                    name_prefix='mapping_inr.')
 
     style_dict = {}
-    style_dict.update(self.mapping_network_nerf(z_nerf))
-    style_dict.update(self.mapping_network_inr(z_inr))
-
-    if global_cfg.tl_debug:
-      VerboseModel.forward_verbose(self.nerf_rgb_mapping,
-                                   inputs_args=(style_dict['nerf_rgb'],),
-                                   input_padding=50,
-                                   name_prefix='nerf_rgb_mapping.')
-    style_dict['nerf_rgb'] = self.nerf_rgb_mapping(style_dict['nerf_rgb'])
+    style_dict.update(self.mapping_shape(z_shape))
+    style_dict.update(self.mapping_app(z_app))
+    style_dict.update(self.mapping_inr(z_inr))
 
     return style_dict
 
-  def generate_avg_frequencies(self, num_samples=10000, device='cuda'):
+  def get_truncated_freq_phase(self,
+                               raw_style_dict,
+                               avg_style_dict,
+                               raw_lambda):
+
+    truncated_style_dict = {}
+    for name, avg_style in avg_style_dict.items():
+      raw_style = raw_style_dict[name]
+      truncated_style = avg_style + raw_lambda * (raw_style - avg_style)
+      truncated_style_dict[name] = truncated_style
+    return truncated_style_dict
+
+  def generate_avg_frequencies(self,
+                               num_samples=10000,
+                               device='cuda'):
     """Calculates average frequencies and phase shifts"""
 
     # z = torch.randn((num_samples, self.z_dim), device=device)
@@ -1735,16 +1110,13 @@ class Generator_Diffcam(GeneratorNerfINR_base):
     for name, style in style_dict.items():
       avg_styles[name] = style.mean(0, keepdim=True)
 
-    self.avg_styles = avg_styles
+    # self.avg_styles = avg_styles
     return avg_styles
 
   def staged_forward(self, *args, **kwargs):
     raise NotImplementedError
 
   def set_device(self, device):
-    # self.device = device
-    # self.siren.device = device
-    # self.generate_avg_frequencies()
     pass
 
   def forward_camera_pos_and_lookup(self,
@@ -1876,7 +1248,7 @@ class Generator_Diffcam(GeneratorNerfINR_base):
 class GeneratorNerfINR_freeze_NeRF(Generator_Diffcam):
 
   def load_nerf_ema(self, G_ema):
-    ret = self.siren.load_state_dict(G_ema.siren.state_dict())
+    ret = self.nerf_net.load_state_dict(G_ema.nerf_net.state_dict())
     ret = self.mapping_network_nerf.load_state_dict(G_ema.mapping_network_nerf.state_dict())
     ret = self.aux_to_rbg.load_state_dict(G_ema.aux_to_rbg.state_dict())
 
@@ -1941,8 +1313,8 @@ class GeneratorNerfINR_freeze_NeRF(Generator_Diffcam):
 
     # Model prediction on course points
     with torch.no_grad():
-      coarse_output = self.siren(
-        input=transformed_points,  # (b, n x s, 3)
+      coarse_output = self.nerf_net(
+        x=transformed_points,  # (b, n x s, 3)
         style_dict=style_dict,
         ray_directions=transformed_ray_directions_expanded,
       )
@@ -1953,7 +1325,7 @@ class GeneratorNerfINR_freeze_NeRF(Generator_Diffcam):
       fine_points, fine_z_vals = self.get_fine_points_and_direction(
         coarse_output=coarse_output,
         z_vals=z_vals,
-        dim_rgb=self.siren.rgb_dim,
+        dim_rgb=self.nerf_net.rgb_dim,
         clamp_mode=clamp_mode,
         nerf_noise=nerf_noise,
         num_steps=num_steps,
@@ -1963,8 +1335,8 @@ class GeneratorNerfINR_freeze_NeRF(Generator_Diffcam):
 
       # Model prediction on re-sampled find points
       with torch.no_grad():
-        fine_output = self.siren(
-          input=fine_points,  # (b, n x s, 3)
+        fine_output = self.nerf_net(
+          x=fine_points,  # (b, n x s, 3)
           style_dict=style_dict,
           ray_directions=transformed_ray_directions_expanded,  # (b, n x s, 3)
         )
@@ -1986,7 +1358,7 @@ class GeneratorNerfINR_freeze_NeRF(Generator_Diffcam):
       rgb_sigma=all_outputs,
       z_vals=all_z_vals,
       device=device,
-      dim_rgb=self.siren.rgb_dim,
+      dim_rgb=self.nerf_net.rgb_dim,
       white_back=white_back,
       last_back=last_back,
       clamp_mode=clamp_mode,
