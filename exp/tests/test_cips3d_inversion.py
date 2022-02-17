@@ -69,6 +69,44 @@ class Testing_ffhq_diffcam_exp(unittest.TestCase):
     default_dicts[title] = dd
     show_max.append(False)
 
+    FID_r64_debug = collections.defaultdict(dict)
+    title = 'FID_r64_debug'
+    log_file = 'textdir/eval.ma0.FID.log'
+    dd = eval(title)
+    dd[f'{bucket_root}/results/CIPS-3D/ffhq_diffcam_exp/train_ffhq-20220124_160131_073'] = \
+      {'20220124_160131_073-ffhq_r64-gpu.4x8-finetune.F-far.1_12-gridwraper.T': f"{log_file}", }
+    dd[f'{bucket_root}/results/CIPS-3D/ffhq_diffcam_exp/train_ffhq-20220124_164043_043'] = \
+      {'20220124_164043_043-ffhq_r64-gpu.4x8-finetune.F-far.1_5-gridwraper.F': f"{log_file}", }
+    dd[f'{bucket_root}/results/CIPS-3D/ffhq_diffcam_exp/train_ffhq-20220217_061738_838'] = \
+      {'20220217_061738_838-ffhq_r64-gpu.4x8-finetune.F-far.1_5-grad_points.64': f"{log_file}", }
+    dd[f'{bucket_root}/results/CIPS-3D/ffhq_diffcam_exp/train_ffhq-20220217_093119_701'] = \
+      {'20220217_093119_701-ffhq_r64-gpu.4x8-finetune.F-far.1_5-grad_points.32': f"{log_file}", }
+
+    dd['properties'] = {'title': title,
+                        # 'xlim': [0, 3000000],
+                        'ylim': [0, 50]
+                        }
+    default_dicts[title] = dd
+    show_max.append(False)
+
+    FID_r128 = collections.defaultdict(dict)
+    title = 'FID_r128'
+    log_file = 'textdir/eval.ma0.FID.log'
+    dd = eval(title)
+    dd[f'{bucket_root}/results/CIPS-3D/ffhq_diffcam_exp/train_ffhq-20220216_110534_197'] = \
+      {'20220216_110534_197-ffhq_r128-gpu.4x8-finetune.T-freeze_intr.F-grad_points.96': f"{log_file}", }
+    dd[f'{bucket_root}/results/CIPS-3D/ffhq_diffcam_exp/train_ffhq-20220216_140026_050'] = \
+      {'20220216_140026_050-ffhq_r128-gpu.4x8-finetune.T-freeze_intr.T-grad_points.96': f"{log_file}", }
+    dd[f'{bucket_root}/results/CIPS-3D/ffhq_diffcam_exp/train_ffhq-20220216_141517_754'] = \
+      {'20220216_141517_754-ffhq_r128-gpu.4x8-finetune.T-freeze_intr.T-grad_points.128': f"{log_file}", }
+
+    dd['properties'] = {'title': title,
+                        # 'xlim': [0, 3000000],
+                        'ylim': [0, 50]
+                        }
+    default_dicts[title] = dd
+    show_max.append(False)
+
     plotobs = PlotResults()
     label2datas_list = plotobs.plot_defaultdicts(
       outfigure=outfigure, default_dicts=default_dicts, show_max=show_max, figsize_wh=(16, 7.2))

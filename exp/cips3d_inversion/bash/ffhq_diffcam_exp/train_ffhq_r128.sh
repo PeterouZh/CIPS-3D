@@ -69,9 +69,9 @@ python -c "from exp.tests.test_cips3d_inversion import Testing_ffhq_diffcam_exp;
     batch_size 4 img_size 128 total_iters 800000 \
     gen_lr 0.0001 disc_lr 0.001 \
     warmup_D True fade_steps 10000 \
-    train_aux_img True G_kwargs.nerf_kwargs.N_samples 12 G_kwargs.nerf_kwargs.N_importance 24 \
+    train_aux_img True G_kwargs.nerf_kwargs.N_samples 12 G_kwargs.nerf_kwargs.N_importance 12 \
     grad_points 128 freeze_intr True \
-    load_finetune True finetune_dir results/CIPS-3D/ffhq_diffcam_exp/train_ffhq-20220124_164043_043/ckptdir/resume
+    load_finetune True finetune_dir results/CIPS-3D/ffhq_diffcam_exp/train_ffhq-20220217_093119_701/ckptdir/resume
 #  --tl_outdir results/ffhq_exp/train_ffhq
 
 
