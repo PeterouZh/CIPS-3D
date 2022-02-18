@@ -7,7 +7,10 @@ import torch
 
 
 class Testing_ffhq_diffcam_exp(unittest.TestCase):
+  """
+  NeRF: siren;
 
+  """
   def test__plot_fid(self):
     """
     export PYTHONPATH=.:./tl2_lib
@@ -101,6 +104,8 @@ class Testing_ffhq_diffcam_exp(unittest.TestCase):
       {'20220216_141517_754-ffhq_r128-gpu.4x8-finetune.T-freeze_intr.T-grad_points.128': f"{log_file}", }
     dd[f'{bucket_root}/results/CIPS-3D/ffhq_diffcam_exp/train_ffhq-20220217_174134_576'] = \
       {'20220217_174134_576-ffhq_r128-gpu.4x8-finetune.T-freeze_intr.T-grad_points.128': f"{log_file}", }
+    dd[f'{bucket_root}/results/CIPS-3D/ffhq_diffcam_exp/train_ffhq-20220217_235524_842'] = \
+      {'20220217_235524_842-ffhq_r128-gpu.4x8-finetune.T-freeze_intr.T-grad_points.128': f"{log_file}", }
 
     dd['properties'] = {'title': title,
                         # 'xlim': [0, 3000000],
@@ -450,6 +455,75 @@ class Testing_ffhq_diffcam_exp(unittest.TestCase):
 
 
 class Testing_ffhq_diffcam_exp_v1(unittest.TestCase):
+  """
+  NeRF: cips_net;
+
+  """
+
+  def test__plot_fid(self):
+    """
+    export PYTHONPATH=.:./tl2_lib
+    python -c "from exp.tests.test_cips3d import Testing_ffhq_exp;\
+      Testing_ffhq_exp().test__plot_fid()"
+
+    """
+    if 'CUDA_VISIBLE_DEVICES' not in os.environ:
+      os.environ['CUDA_VISIBLE_DEVICES'] = '0'
+    if 'TIME_STR' not in os.environ:
+      os.environ['TIME_STR'] = '0'
+    from tl2.launch.launch_utils import \
+      (get_command_and_outdir, setup_outdir_and_yaml, get_append_cmd_str, start_cmd_run)
+
+    command, outdir = get_command_and_outdir(self, func_name=sys._getframe().f_code.co_name, file=__file__)
+    argv_str = f"""
+                  --tl_config_file none
+                  --tl_command none
+                  --tl_outdir {outdir}
+                  """
+    args = setup_outdir_and_yaml(argv_str)
+    outdir = args.tl_outdir
+
+    from tl2.proj.matplot.plot_results import PlotResults
+    import collections
+    import pickle
+
+    outfigure = os.path.join(outdir, 'FID.jpg')
+    default_dicts = collections.OrderedDict()
+    show_max = []
+
+    bucket_root = "/home/ma-user/work/ZhouPeng/bucket_3690/"
+
+    FID_r64 = collections.defaultdict(dict)
+    title = 'FID_r64'
+    log_file = 'textdir/eval.ma0.FID.log'
+    dd = eval(title)
+    dd[f'{bucket_root}/results/CIPS-3D/ffhq_diffcam_exp_v1/train_ffhq-20220218_012019_645'] = \
+      {'20220218_012019_645-ffhq_r128-gpu.4x4-': f"{log_file}", }
+    dd[f'{bucket_root}/results/CIPS-3D/ffhq_diffcam_exp_v1/train_ffhq-20220218_023549_830'] = \
+      {'20220218_023549_830-ffhq_r128-gpu.4x8-': f"{log_file}", }
+    dd[f'{bucket_root}/results/CIPS-3D/ffhq_diffcam_exp_v1/train_ffhq-20220218_093950_696'] = \
+      {'20220218_093950_696-ffhq_r128-gpu.4x8-gridscale.F': f"{log_file}", }
+    dd[f'{bucket_root}/results/CIPS-3D/ffhq_diffcam_exp_v1/train_ffhq-20220218_104824_186'] = \
+      {'20220218_104824_186-ffhq_r128-gpu.4x8-gridscale.F-appendxyz.F': f"{log_file}", }
+
+    dd['properties'] = {'title': title,
+                        # 'xlim': [0, 3000000],
+                        # 'ylim': [0, 50]
+                        }
+    default_dicts[title] = dd
+    show_max.append(False)
+
+    plotobs = PlotResults()
+    label2datas_list = plotobs.plot_defaultdicts(
+      outfigure=outfigure, default_dicts=default_dicts, show_max=show_max, figsize_wh=(16, 7.2))
+    print(f'Save to {outfigure}.')
+
+    saved_data = '__'.join(outdir.split('/')[-2:])
+    saved_data = f"{outdir}/{saved_data}.pkl"
+    with open(saved_data, 'wb') as f:
+      pickle.dump(label2datas_list, f)
+    print(f"Save data to {saved_data}")
+    pass
 
   def test__build_generator(self, debug=True):
     """
@@ -495,7 +569,7 @@ class Testing_ffhq_diffcam_exp_v1(unittest.TestCase):
                 --tl_command {command}
                 --tl_outdir {outdir}
                 {"--tl_resume --tl_resumedir " + outdir if resume else ""}
-                --tl_opts {tl_opts}
+                --tl_opts {tl_opts} 
                 --tl_debug True
                 """
     args, cfg = setup_outdir_and_yaml(argv_str, return_cfg=True)
@@ -530,7 +604,7 @@ class Testing_ffhq_diffcam_exp_v1(unittest.TestCase):
                                                  H0=H,
                                                  W0=W).cuda()
 
-    # ckpt_dir = "../bucket_3690/results/CIPS-3D/ffhq_diffcam_exp/train_ffhq-20220124_164043_043/ckptdir/resume"
+    # ckpt_dir = "../bucket_3690/results/CIPS-3D/ffhq_diffcam_exp_v1/train_ffhq-20220218_023549_830/ckptdir/resume"
     ckpt_dir = "results/ffhq_diffcam_exp_v1/train_ffhq/ckptdir/resume"
     model_dict = {
       'G_ema': G,
@@ -573,7 +647,7 @@ class Testing_ffhq_diffcam_exp_v1(unittest.TestCase):
           Testing_ffhq_diffcam_exp_v1().test_train_ffhq(debug=False)" \
           --tl_opts \
             batch_size 4 img_size 32 \
-            G_cfg.nerf_cfg.scale_factor 8 G_cfg.inr_block_end_index 1 \
+            G_cfg.nerf_cfg.scale_factor None G_cfg.inr_block_end_index 1 \
             load_finetune False \
           --tl_outdir results/ffhq_exp/train_ffhq
 

@@ -70,7 +70,7 @@ python -c "from exp.tests.test_cips3d_inversion import Testing_ffhq_diffcam_exp_
     warmup_D True fade_steps 10000 \
     train_aux_img True G_kwargs.nerf_kwargs.N_samples 12 G_kwargs.nerf_kwargs.N_importance 12 \
     grad_points 64 freeze_intr True \
-    G_cfg.nerf_cfg.scale_factor 8 G_cfg.inr_block_end_index 1 \
+    G_cfg.nerf_cfg.scale_factor None G_cfg.inr_block_end_index 1 \
     load_finetune False
 #    load_finetune True finetune_dir results/CIPS-3D/ffhq_exp/train_ffhq-20211231_221845_770/ckptdir/best_fid
 #  --tl_outdir results/ffhq_exp/train_ffhq

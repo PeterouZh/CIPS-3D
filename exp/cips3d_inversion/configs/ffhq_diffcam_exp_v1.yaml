@@ -40,17 +40,17 @@ shape_net_cfg: &shape_net_cfg
   hidden_dim: 128
   out_dim: 64
   style_dim: 128
-  num_blocks: 3
+  num_blocks: 2
 
 app_net_cfg: &app_net_cfg
 #  input_dim: 64
-  hidden_dim: 128
+  hidden_dim: 64
   out_dim: 64
   style_dim: 128
   num_blocks: 3
 
 nerf_cfg: &nerf_cfg
-  scale_factor: 8
+  scale_factor: null
   PEF_cfg:
     N_freqs: 10
     affine_dim: 16
@@ -80,7 +80,7 @@ inr_cfg: &inr_cfg
   hidden_dim: 512
   out_dim: 3
   style_dim: 512
-  num_blocks: 5
+  num_blocks: 6
 
 mapping_inr_cfg: &mapping_inr_cfg
   z_dim: 512
