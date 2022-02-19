@@ -61,6 +61,9 @@ class STModel(object):
 
     network_pkl = st_utils.selectbox_v1('network_pkl', options_dict=cfg.network_pkl,
                                         default_key=cfg.default_network_pkl, sidebar=True)
+    network_pkl_model = st_utils.selectbox_v1('network_pkl_model', options_dict=cfg.network_pkl_model,
+                                              default_key=cfg.default_network_pkl_model, sidebar=True)
+    use_network_pkl_model = st_utils.checkbox('use_network_pkl_model', cfg.use_network_pkl_model)
 
     st_utils.st_set_sep('video kwargs')
     bs = st_utils.number_input('bs', cfg.bs, sidebar=True)
@@ -96,8 +99,11 @@ class STModel(object):
     G_kwargs['nerf_kwargs']['N_samples'] = nerf_N_samples
     G_kwargs['nerf_kwargs']['N_importance'] = nerf_N_importance
 
-    G = build_model(cfg.G_cfg).cuda()
-    Checkpointer(G).load_state_dict_from_file(network_pkl)
+    if use_network_pkl_model:
+      G = torch.load(network_pkl_model).cuda()
+    else:
+      G = build_model(cfg.G_cfg).cuda()
+      Checkpointer(G).load_state_dict_from_file(network_pkl)
 
     H = W = img_size
     cam_param = cam_params.CamParams.from_config(H0=H, W0=W).cuda()
@@ -169,6 +175,7 @@ class STModel(object):
     nerf_N_samples = st_utils.number_input('nerf_N_samples', cfg.nerf_N_samples, sidebar=True)
     nerf_N_importance = st_utils.number_input('nerf_N_importance', cfg.nerf_N_importance, sidebar=True)
     forward_points = st_utils.number_input('forward_points', cfg.forward_points, sidebar=True)
+    psi = st_utils.number_input('psi', cfg.psi, sidebar=True, format="%.3f")
 
     st_utils.st_set_sep('pose kwargs')
     yaw_min = st_utils.number_input('yaw_min', cfg.yaw_min, sidebar=True, format="%.3f")
@@ -225,7 +232,8 @@ class STModel(object):
                            rays_d=rays_d,
                            forward_points=forward_points ** 2,  # disable gradients
                            return_aux_img=True,
-                           **G_kwargs)
+                           **{**G_kwargs,
+                              'psi': psi})
       img = make_grid(imgs, nrow=int(math.sqrt(bs)), normalize=True, scale_each=True)
       img_pil = tv_f.to_pil_image(img)
       img_str = f"{idx}/{N_step}, yaw={yaw_:.2f}"

@@ -49,7 +49,8 @@ def setup_evaluation(rank,
   logger = logging.getLogger('tl')
 
   if rank == 0 and del_fid_real_images:
-    shutil.rmtree(real_dir, ignore_errors=True)
+    if os.path.exists(real_dir):
+      shutil.rmtree(real_dir)
   ddp_utils.d2_synchronize()
 
   if os.path.exists(real_dir):
