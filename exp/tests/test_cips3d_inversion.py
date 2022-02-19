@@ -512,10 +512,12 @@ class Testing_ffhq_diffcam_exp_v1(unittest.TestCase):
       {'20220218_113228_416-ffhq_r128-gpu.4x8-gridscale.F-appendxyz.F': f"{log_file}", }
     dd[f'{bucket_root}/results/CIPS-3D/ffhq_diffcam_exp_v1/train_ffhq-20220218_141818_940'] = \
       {'20220218_141818_940-ffhq_r128-gpu.4x8-gridscale.F-appendxyz.F-xyz_affine.F': f"{log_file}", }
+    dd[f'{bucket_root}/results/CIPS-3D/ffhq_diffcam_exp_v1/train_ffhq-20220218_225857_033'] = \
+      {'20220218_225857_033-ffhq_r128-gpu.4x8-gridscale.F-appendxyz.F-xyz_affine.T': f"{log_file}", }
 
     dd['properties'] = {'title': title,
                         # 'xlim': [0, 3000000],
-                        'ylim': [0, 100]
+                        'ylim': [0, 50]
                         }
     default_dicts[title] = dd
     show_max.append(False)
@@ -617,7 +619,7 @@ class Testing_ffhq_diffcam_exp_v1(unittest.TestCase):
       'G_ema': G,
       'cam_param': cam_param
     }
-    torch_utils.load_models(ckpt_dir, model_dict=model_dict)
+    # torch_utils.load_models(ckpt_dir, model_dict=model_dict)
 
     intr = cam_param(mode='get_intrinsic')
     rays_o, rays_d, select_inds = cam_param.get_rays_random_pose(

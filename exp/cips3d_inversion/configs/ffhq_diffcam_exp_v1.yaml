@@ -22,6 +22,7 @@ modelarts_download: &modelarts_download
 
 network_pkl: &network_pkl
   FFHQ_r64: "../bucket_3690/results/CIPS-3D/ffhq_diffcam_exp_v1/train_ffhq-20220218_113228_416/ckptdir/resume/G_ema.pth"
+#  FFHQ_r64: "../bucket_3690/results/CIPS-3D/ffhq_diffcam_exp_v1/train_ffhq-20220218_141818_940/ckptdir/resume/G_ema.pth"
 
 
 obs_ffhq_r256: &obs_ffhq_r256
@@ -40,7 +41,7 @@ obs_inception_v3: &obs_inception_v3
 
 
 shape_net_cfg: &shape_net_cfg
-#  input_dim: 128
+  input_dim: 128
   hidden_dim: 128
   out_dim: 64
   style_dim: 128
@@ -51,7 +52,7 @@ app_net_cfg: &app_net_cfg
   hidden_dim: 64
   out_dim: 64
   style_dim: 128
-  num_blocks: 3
+  num_blocks: 1
 
 nerf_cfg: &nerf_cfg
   scale_factor: null
@@ -84,7 +85,7 @@ inr_cfg: &inr_cfg
   hidden_dim: 512
   out_dim: 3
   style_dim: 512
-  num_blocks: 6
+  num_blocks: 10
 
 mapping_inr_cfg: &mapping_inr_cfg
   z_dim: 512
@@ -103,7 +104,7 @@ G_cfg_3D2D: &G_cfg_3D2D
   mapping_app_cfg: *mapping_app_cfg
   inr_cfg: *inr_cfg
   mapping_inr_cfg: *mapping_inr_cfg
-  inr_block_end_index: 1
+  inr_block_end_index: 10
 
 
 G_kwargs: &G_kwargs
