@@ -16,7 +16,7 @@ import torch
 from torchvision.utils import make_grid
 import torchvision.transforms.functional as tv_f
 
-from tl2.launch.launch_utils import update_parser_defaults_from_yaml, global_cfg
+from tl2.launch.launch_utils import update_parser_defaults_from_yaml, global_cfg, TLCfgNode
 from tl2.proj.streamlit import SessionState
 from tl2.proj.streamlit import st_utils
 from tl2.proj.logger.logger_utils import get_file_logger
@@ -203,7 +203,9 @@ class STModel(object):
     if use_network_pkl_model:
       G = torch.load(network_pkl_model).cuda()
     else:
-      G = build_model(cfg.G_cfg).cuda()
+      load_G_cfg = TLCfgNode.load_yaml_file(cfg_filename=f"{os.path.dirname(network_pkl)}/config_command.yaml")
+      load_G_cfg = list(load_G_cfg.values())[0]
+      G = build_model(load_G_cfg.G_cfg).cuda()
       Checkpointer(G).load_state_dict_from_file(network_pkl)
 
     H = W = img_size

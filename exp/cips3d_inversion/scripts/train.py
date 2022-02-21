@@ -307,7 +307,10 @@ def train(rank,
 
   H = W = global_cfg.img_size
   freeze_intr = global_cfg.get('freeze_intr', True)
-  cam_param = cam_params.CamParams.from_config(num_imgs=1, H0=H, W0=W, freeze_intr=freeze_intr).to(device)
+  normalize_rays_d = global_cfg.get('normalize_rays_d', False)
+  cam_param = cam_params.CamParams.from_config(num_imgs=1, H0=H, W0=W,
+                                               freeze_intr=freeze_intr,
+                                               normalize_rays_d=normalize_rays_d).to(device)
   cam_param_ddp = DDP(cam_param, device_ids=[rank], find_unused_parameters=True, broadcast_buffers=False)
 
   generator = build_model(cfg=global_cfg.G_cfg).to(device)

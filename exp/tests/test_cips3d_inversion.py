@@ -936,8 +936,10 @@ class Testing_ffhq_diffcam_exp_v2(unittest.TestCase):
     #   {'20220219_175046_931-ffhq_r128-gpu.4x8-shape_block_end_index.2': f"{log_file}", }
     dd[f'{bucket_root}/results/CIPS-3D/ffhq_diffcam_exp_v2/train_ffhq-20220219_182559_307'] = \
       {'20220219_182559_307-ffhq_r128-gpu.4x8-shape_block.1-app_blocks.1': f"{log_file}", }
-    dd[f'{bucket_root}/results/CIPS-3D/ffhq_diffcam_exp_v2/train_ffhq-20220219_194936_950'] = \
-      {'20220219_194936_950-ffhq_r128-gpu.4x8-shape_block.1-app_blocks.2': f"{log_file}", }
+    # dd[f'{bucket_root}/results/CIPS-3D/ffhq_diffcam_exp_v2/train_ffhq-20220219_194936_950'] = \
+    #   {'20220219_194936_950-ffhq_r128-gpu.4x8-shape_block.1-app_blocks.2': f"{log_file}", }
+    dd[f'{bucket_root}/results/CIPS-3D/ffhq_diffcam_exp_v2/train_ffhq-20220219_211756_715'] = \
+      {'20220219_211756_715-ffhq_r128-gpu.4x8-shape_block.1-app_blocks.3': f"{log_file}", }
 
     dd['properties'] = {'title': title,
                         # 'xlim': [0, 3000000],
@@ -1021,7 +1023,6 @@ class Testing_ffhq_diffcam_exp_v2(unittest.TestCase):
     device = 'cuda'
 
     # G = build_model(cfg.G_cfg).to(device)
-    G = Generator_Diffcam(**cfg.G_cfg).to(device)
     # Checkpointer(G).load_state_dict_from_file(cfg.network_pkl)
 
     metadata = cfg.G_kwargs
@@ -1037,8 +1038,11 @@ class Testing_ffhq_diffcam_exp_v2(unittest.TestCase):
                                                  H0=H,
                                                  W0=W).cuda()
 
-    ckpt_dir = "../bucket_3690/results/CIPS-3D/ffhq_diffcam_exp_v2/train_ffhq-20220219_182559_307/ckptdir/resume"
+    ckpt_dir = "../bucket_3690/results/CIPS-3D/ffhq_diffcam_exp_v2/train_ffhq-20220219_211756_715/ckptdir/resume"
     # ckpt_dir = "results/ffhq_diffcam_exp_v1/train_ffhq/ckptdir/resume"
+    load_G_cfg = TLCfgNode.load_yaml_file(cfg_filename=f"{os.path.abspath(ckpt_dir)}/config_command.yaml")
+    load_G_cfg = list(load_G_cfg.values())[0]
+    G = Generator_Diffcam(**load_G_cfg.G_cfg).to(device)
     model_dict = {
       'G_ema': G,
       'cam_param': cam_param

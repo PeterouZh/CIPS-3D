@@ -21,12 +21,13 @@ modelarts_download: &modelarts_download
 
 
 network_pkl: &network_pkl
+  FFHQ_r64_siren_b3: "/home/ma-user/work/ZhouPeng/bucket_3690/results/CIPS-3D/ffhq_diffcam_exp_v2/train_ffhq-20220219_211756_715/ckptdir/resume/G_ema.pth"
+  FFHQ_r64_siren_b1: "/home/ma-user/work/ZhouPeng/bucket_3690/results/CIPS-3D/ffhq_diffcam_exp_v2/train_ffhq-20220219_182559_307/ckptdir/resume/G_ema.pth"
   FFHQ_r64: "../bucket_3690/results/CIPS-3D/ffhq_diffcam_exp_v1/train_ffhq-20220218_225857_033/ckptdir/resume/G_ema.pth"
   FFHQ_r128: "../bucket_3690/results/CIPS-3D/ffhq_diffcam_exp_v1/train_ffhq-20220219_104511_901/ckptdir/resume/G_ema.pth"
-#  FFHQ_r64: "../bucket_3690/results/CIPS-3D/ffhq_diffcam_exp_v1/train_ffhq-20220218_113228_416/ckptdir/resume/G_ema.pth"
 
 network_pkl_model: &network_pkl_model
-  FFHQ_r64_siren_b2: "/home/ma-user/work/ZhouPeng/bucket_3690/results/CIPS-3D/ffhq_diffcam_exp_v2/train_ffhq-20220219_194936_950/ckptdir/resume/G_ema_model.pth"
+  FFHQ_r64_siren_b3: "/home/ma-user/work/ZhouPeng/bucket_3690/results/CIPS-3D/ffhq_diffcam_exp_v2/train_ffhq-20220219_211756_715/ckptdir/resume/G_ema_model.pth"
   FFHQ_r64_siren_b1: "/home/ma-user/work/ZhouPeng/bucket_3690/results/CIPS-3D/ffhq_diffcam_exp_v2/train_ffhq-20220219_182559_307/ckptdir/resume/G_ema_model.pth"
   FFHQ_r128_siren: "/home/ma-user/work/ZhouPeng/bucket_3690/results/CIPS-3D/ffhq_diffcam_exp/train_ffhq-20220217_235524_842/ckptdir/resume/G_ema_model.pth"
 
@@ -47,10 +48,10 @@ obs_inception_v3: &obs_inception_v3
 
 shape_net_cfg: &shape_net_cfg
   input_dim: 3
-  hidden_dim: 256
+  hidden_dim: 128
   out_dim: 32
   style_dim: 256
-  num_blocks: 4
+  num_blocks: 3
   add_out_layer: false
   add_in_layer: true
 
@@ -59,7 +60,7 @@ app_net_cfg: &app_net_cfg
   hidden_dim: 128
   out_dim: 32
   style_dim: 256
-  num_blocks: 2
+  num_blocks: 1
 
 nerf_cfg: &nerf_cfg
   scale_factor: null
@@ -69,7 +70,6 @@ nerf_cfg: &nerf_cfg
   use_PEF: false
   shape_net_cfg: *shape_net_cfg
   app_net_cfg: *app_net_cfg
-#  shape_block_end_index: 2
 
 mapping_shape_cfg: &mapping_shape_cfg
   z_dim: 256
@@ -111,7 +111,8 @@ G_cfg_3D2D: &G_cfg_3D2D
   mapping_app_cfg: *mapping_app_cfg
   inr_cfg: *inr_cfg
   mapping_inr_cfg: *mapping_inr_cfg
-  shape_block_end_index: 1
+  shape_block_end_index: 3
+  app_block_end_index: 1
   inr_block_end_index: 1
 
 
@@ -215,6 +216,7 @@ train_ffhq:
   fade_steps: 10000
   nerf_noise_disable: false
   freeze_intr: true
+  normalize_rays_d: false
   # log
   log_every: 10
   eval_every: 500
@@ -312,10 +314,10 @@ sampling_yaw_web:
     G_cfg: *G_cfg_3D2D
     G_kwargs: *G_kwargs
     network_pkl: *network_pkl
-    default_network_pkl: FFHQ_r64
+    default_network_pkl: FFHQ_r64_siren_b1
     network_pkl_model: *network_pkl_model
     default_network_pkl_model: FFHQ_r64_siren_b1
-    use_network_pkl_model: true
+    use_network_pkl_model: false
     bs: 4
     img_size: 128
     fps: 20

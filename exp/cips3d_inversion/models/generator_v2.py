@@ -575,6 +575,7 @@ class Generator_Diffcam(nn.Module):
                inr_cfg,
                mapping_inr_cfg,
                shape_block_end_index=None,
+               app_block_end_index=None,
                inr_block_end_index=None,
                device='cuda',
                **kwargs):
@@ -587,6 +588,7 @@ class Generator_Diffcam(nn.Module):
       'inr_cfg': inr_cfg,
       'mapping_inr_cfg': mapping_inr_cfg,
       'shape_block_end_index': shape_block_end_index,
+      'app_block_end_index': app_block_end_index,
       'inr_block_end_index': inr_block_end_index,
     })
 
@@ -596,7 +598,10 @@ class Generator_Diffcam(nn.Module):
     self.module_name_list = []
 
     # nerf_net
-    self.nerf_net = nerf_net.NeRFNetwork_SIREN_skip(shape_block_end_index=shape_block_end_index, **nerf_cfg)
+    self.nerf_net = nerf_net.NeRFNetwork_SIREN_skip(
+      shape_block_end_index=shape_block_end_index,
+      app_block_end_index=app_block_end_index,
+      **nerf_cfg)
     self.module_name_list.append('nerf_net')
 
     # mapping shape
