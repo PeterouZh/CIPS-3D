@@ -940,6 +940,10 @@ class Testing_ffhq_diffcam_exp_v2(unittest.TestCase):
     #   {'20220219_194936_950-ffhq_r128-gpu.4x8-shape_block.1-app_blocks.2': f"{log_file}", }
     dd[f'{bucket_root}/results/CIPS-3D/ffhq_diffcam_exp_v2/train_ffhq-20220219_211756_715'] = \
       {'20220219_211756_715-ffhq_r128-gpu.4x8-shape_block.1-app_blocks.3': f"{log_file}", }
+    dd[f'{bucket_root}/results/CIPS-3D/ffhq_diffcam_exp_v2/train_ffhq-20220221_091857_103'] = \
+      {'20220221_091857_103-ffhq_r128-gpu.4x8-shape_block.1-app_blocks.1-norm_raysd.F': f"{log_file}", }
+    dd[f'{bucket_root}/results/CIPS-3D/ffhq_diffcam_exp_v2/train_ffhq-20220221_092814_741'] = \
+      {'20220221_092814_741-ffhq_r128-gpu.4x8-shape_block.1-app_blocks.1-norm_raysd.T': f"{log_file}", }
 
     dd['properties'] = {'title': title,
                         # 'xlim': [0, 3000000],
