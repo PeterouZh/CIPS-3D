@@ -207,9 +207,11 @@ class STModel(object):
       load_G_cfg = list(load_G_cfg.values())[0]
       G = build_model(load_G_cfg.G_cfg).cuda()
       Checkpointer(G).load_state_dict_from_file(network_pkl)
+      cfg = load_G_cfg
 
     H = W = img_size
-    cam_param = cam_params.CamParams.from_config(H0=H, W0=W).cuda()
+    cam_cfg = cfg.get('cam_cfg', {})
+    cam_param = cam_params.CamParams.from_config(H0=H, W0=W, **cam_cfg).cuda()
     intr = cam_param(mode='get_intrinsic')
 
 

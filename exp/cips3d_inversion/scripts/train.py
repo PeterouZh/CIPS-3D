@@ -306,11 +306,9 @@ def train(rank,
   # batch_data = next(data_loader_iter)
 
   H = W = global_cfg.img_size
-  freeze_intr = global_cfg.get('freeze_intr', True)
-  normalize_rays_d = global_cfg.get('normalize_rays_d', False)
-  cam_param = cam_params.CamParams.from_config(num_imgs=1, H0=H, W0=W,
-                                               freeze_intr=freeze_intr,
-                                               normalize_rays_d=normalize_rays_d).to(device)
+  cam_cfg = global_cfg.get('cam_cfg', {'freeze_intr': True,
+                                      'normalize_rays_d': False})
+  cam_param = cam_params.CamParams.from_config(num_imgs=1, H0=H, W0=W, **cam_cfg).to(device)
   cam_param_ddp = DDP(cam_param, device_ids=[rank], find_unused_parameters=True, broadcast_buffers=False)
 
   generator = build_model(cfg=global_cfg.G_cfg).to(device)
@@ -564,12 +562,19 @@ def train(rank,
     scaler_G.unscale_(optimizer_G)
     scaler_G.unscale_(optimizer_cam)
     try:
-      G_total_norm = torch.nn.utils.clip_grad_norm_(generator_ddp.parameters(),
-                                                    global_cfg.grad_clip,
-                                                    # metadata.get('grad_clip', 0.3),
-                                                    # error_if_nonfinite=True, # torch >= 1.9
-                                                    )
-      summary_ddict['G_total_norm']['G_total_norm'] = G_total_norm.item()
+      if hasattr(generator, 'get_subnet_grad_norm'):
+        grad_dict = generator.get_subnet_grad_norm()
+        summary_ddict['G_total_norm'].update(grad_dict)
+        G_total_norm = torch.nn.utils.clip_grad_norm_(generator.nerf_net.parameters(),
+                                                      global_cfg.grad_clip)
+
+      else:
+        G_total_norm = torch.nn.utils.clip_grad_norm_(generator_ddp.parameters(),
+                                                      global_cfg.grad_clip,
+                                                      # metadata.get('grad_clip', 0.3),
+                                                      # error_if_nonfinite=True, # torch >= 1.9
+                                                      )
+        summary_ddict['G_total_norm']['G_total_norm'] = G_total_norm.item()
     except:
       summary_ddict['G_total_norm']['G_total_norm'] = np.nan
       logger.info(traceback.format_exc())
