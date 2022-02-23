@@ -104,7 +104,8 @@ class EMA(object):
     """
 
     if itr is not None and itr < self.start_itr:
-      decay = 0.0
+      # decay = 0.0
+      return
     else:
       decay = self.decay
     with torch.no_grad():
