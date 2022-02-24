@@ -1769,12 +1769,18 @@ class Testing_ffhq_diffcam_exp_v4(unittest.TestCase):
       {'20220222_224654_660-ffhq_r128-gpu.4x8-shape_block.2-pos_enc.F': f"{log_file}", }
     dd[f'{bucket_root}/results/CIPS-3D/ffhq_diffcam_exp_v4/train_ffhq-20220222_225039_342'] = \
       {'20220222_225039_342-ffhq_r128-gpu.4x8-shape_block.2-pos_enc.T': f"{log_file}", }
-    dd[f'{bucket_root}/results/CIPS-3D/ffhq_diffcam_exp_v4/train_ffhq-20220222_232501_456'] = \
-      {'20220222_232501_456-ffhq_r128-gpu.4x8-shape_block.8-pos_enc.T': f"{log_file}", }
+    dd[f'{bucket_root}/results/CIPS-3D/ffhq_diffcam_exp_v4/train_ffhq-20220223_134902_190'] = \
+      {'20220223_134902_190-ffhq_r128-gpu.4x8-shape_block.2-pos_enc.T-freq_shift.4.86': f"{log_file}", }
+    dd[f'{bucket_root}/results/CIPS-3D/ffhq_diffcam_exp_v4/train_ffhq-20220223_150208_893'] = \
+      {'20220223_150208_893-ffhq_r128-gpu.4x8-shape_block.2-pos_enc.T-freq_shift.0': f"{log_file}", }
+    dd[f'{bucket_root}/results/CIPS-3D/ffhq_diffcam_exp_v4/train_ffhq-20220223_233549_972'] = \
+      {'20220223_233549_972-ffhq_r128-gpu.4x8-shape_block.8-pos_enc.T-freq_shift.4.86': f"{log_file}", }
+    dd[f'{bucket_root}/results/CIPS-3D/ffhq_diffcam_exp_v4/train_ffhq-20220223_235312_246'] = \
+      {'20220223_235312_246-ffhq_r128-gpu.4x8-shape_block.8-pos_enc.T-freq_shift.30-gs.15': f"{log_file}", }
 
     dd['properties'] = {'title': title,
                         # 'xlim': [0, 3000000],
-                        # 'ylim': [0, 50]
+                        'ylim': [0, 100]
                         }
     default_dicts[title] = dd
     show_max.append(False)
@@ -1785,10 +1791,12 @@ class Testing_ffhq_diffcam_exp_v4(unittest.TestCase):
     dd = eval(title)
     dd[f'{bucket_root}/results/CIPS-3D/ffhq_diffcam_exp_v4/train_ffhq-20220223_093152_188'] = \
       {'20220223_093152_188-ffhq_r128-gpu.4x8-shape_block.2-pos_enc.T-inr_block.9': f"{log_file}", }
+    dd[f'{bucket_root}/results/CIPS-3D/ffhq_diffcam_exp_v4/train_ffhq-20220223_104711_687'] = \
+      {'20220223_104711_687-ffhq_r128-gpu.4x8-shape_block.2-pos_enc.T-inr_block.1': f"{log_file}", }
 
     dd['properties'] = {'title': title,
                         # 'xlim': [0, 3000000],
-                        # 'ylim': [0, 50]
+                        'ylim': [0, 100]
                         }
     default_dicts[title] = dd
     show_max.append(False)
@@ -1884,12 +1892,16 @@ class Testing_ffhq_diffcam_exp_v4(unittest.TestCase):
     # N_rays = 1024
     N_rays = -1
 
-    # ckpt_dir = "../bucket_3690/results/CIPS-3D/ffhq_diffcam_exp_v3/train_ffhq-20220222_160912_420/ckptdir/resume"
-    ckpt_dir = None
-    # ckpt_dir = "results/ffhq_diffcam_exp_v1/train_ffhq/ckptdir/resume"
+    # ckpt_dir = "../bucket_3690/results/CIPS-3D/ffhq_diffcam_exp_v4/train_ffhq-20220222_224654_660/ckptdir/resume"
+    ckpt_dir = "../bucket_3690/results/CIPS-3D/ffhq_diffcam_exp_v4/train_ffhq-20220222_225039_342/ckptdir/resume"
+    # ckpt_dir = "../bucket_3690/results/CIPS-3D/ffhq_diffcam_exp_v4/train_ffhq-20220223_134902_190/ckptdir/resume"
+    # ckpt_dir = None
+
     if ckpt_dir is not None:
       load_G_cfg = TLCfgNode.load_yaml_file(cfg_filename=f"{os.path.abspath(ckpt_dir)}/config_command.yaml")
       load_G_cfg = list(load_G_cfg.values())[0]
+      # load_G_cfg.G_cfg.shape_block_end_index = 8
+      load_G_cfg.G_cfg.nerf_cfg.shape_net_cfg.gradient_scale = 1/15
       D = torch.load(f"{os.path.abspath(ckpt_dir)}/discriminator_model.pth")
     else:
       load_G_cfg = cfg

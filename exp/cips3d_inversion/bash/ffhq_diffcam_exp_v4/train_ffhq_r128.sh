@@ -71,7 +71,7 @@ python -c "from exp.tests.test_cips3d_inversion import Testing_ffhq_diffcam_exp_
     warmup_D True fade_steps 10000 \
     train_aux_img True G_kwargs.nerf_kwargs.N_samples 12 G_kwargs.nerf_kwargs.N_importance 12 \
     grad_points 128 \
-    G_cfg.shape_block_end_index 2 G_cfg.app_block_end_index 1 G_cfg.inr_block_end_index 9 \
+    G_cfg.shape_block_end_index 2 G_cfg.app_block_end_index 1 G_cfg.inr_block_end_index 1 \
     G_cfg.nerf_cfg.shape_net_cfg.use_pos_enc True \
     cam_cfg.normalize_rays_d True \
     load_finetune True finetune_dir results/CIPS-3D/ffhq_diffcam_exp_v4/train_ffhq-20220222_225039_342/ckptdir/resume
