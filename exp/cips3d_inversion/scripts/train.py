@@ -88,6 +88,7 @@ def saved_models(model_dict,
   pass
 
 
+@torch.no_grad()
 def _save_images(G,
                  fixed_z,
                  rays_o,
@@ -99,7 +100,7 @@ def _save_images(G,
   Gz, ret_imgs = G(zs=fixed_z,
                    rays_o=rays_o,
                    rays_d=rays_d,
-                   forward_points=256 ** 2,
+                   forward_points=128 ** 2,
                    return_aux_img=True,
                    **G_kwargs)
   Gz_aux = ret_imgs['aux_img']
@@ -184,7 +185,7 @@ def save_images(saved_dir,
     Gema_flip1, ret_imgs = G_ema(zs=fixed_z,
                                  rays_o=rays_o,
                                  rays_d=rays_d,
-                                 forward_points=256 ** 2,
+                                 forward_points=128 ** 2,
                                  return_aux_img=True,
                                  **copied_metadata)
     Gema_flip1_aux = ret_imgs['aux_img']
@@ -199,7 +200,7 @@ def save_images(saved_dir,
     Gema_flip2, ret_imgs = G_ema(zs=fixed_z,
                                  rays_o=rays_o,
                                  rays_d=rays_d,
-                                 forward_points=256 ** 2,
+                                 forward_points=128 ** 2,
                                  return_aux_img=True,
                                  **copied_metadata)
     Gema_flip2_aux = ret_imgs['aux_img']

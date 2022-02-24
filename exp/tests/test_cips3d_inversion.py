@@ -1793,10 +1793,28 @@ class Testing_ffhq_diffcam_exp_v4(unittest.TestCase):
       {'20220223_093152_188-ffhq_r128-gpu.4x8-shape_block.2-pos_enc.T-inr_block.9': f"{log_file}", }
     dd[f'{bucket_root}/results/CIPS-3D/ffhq_diffcam_exp_v4/train_ffhq-20220223_104711_687'] = \
       {'20220223_104711_687-ffhq_r128-gpu.4x8-shape_block.2-pos_enc.T-inr_block.1': f"{log_file}", }
+    dd[f'{bucket_root}/results/CIPS-3D/ffhq_diffcam_exp_v4/train_ffhq-20220224_091527_603'] = \
+      {'20220224_091527_603-ffhq_r128-gpu.4x8-shape_block.2-freq_shift.4.86': f"{log_file}", }
+    dd[f'{bucket_root}/results/CIPS-3D/ffhq_diffcam_exp_v4/train_ffhq-20220224_092021_015'] = \
+      {'20220224_092021_015-ffhq_r128-gpu.4x8-shape_block.2-freq_shift.4.86': f"{log_file}", }
 
     dd['properties'] = {'title': title,
                         # 'xlim': [0, 3000000],
                         'ylim': [0, 100]
+                        }
+    default_dicts[title] = dd
+    show_max.append(False)
+
+    FID_r256 = collections.defaultdict(dict)
+    title = 'FID_r256'
+    log_file = 'textdir/eval.ma0.FID.log'
+    dd = eval(title)
+    dd[f'{bucket_root}/results/CIPS-3D/ffhq_diffcam_exp_v4/train_ffhq_freeze_nerf-20220224_115722_103'] = \
+      {'20220224_115722_103-ffhq_r128-gpu.4x8-shape_block.2-pos_enc.T-inr_block.9': f"{log_file}", }
+
+    dd['properties'] = {'title': title,
+                        # 'xlim': [0, 3000000],
+                        # 'ylim': [0, 100]
                         }
     default_dicts[title] = dd
     show_max.append(False)
@@ -1887,21 +1905,22 @@ class Testing_ffhq_diffcam_exp_v4(unittest.TestCase):
     metadata['nerf_kwargs']['h_stddev'] = 0.
     metadata['nerf_kwargs']['v_stddev'] = 0.
 
-    num_imgs = 4
-    H = W = 64
+    num_imgs = 2
+    H = W = 128
     # N_rays = 1024
     N_rays = -1
 
     # ckpt_dir = "../bucket_3690/results/CIPS-3D/ffhq_diffcam_exp_v4/train_ffhq-20220222_224654_660/ckptdir/resume"
-    ckpt_dir = "../bucket_3690/results/CIPS-3D/ffhq_diffcam_exp_v4/train_ffhq-20220222_225039_342/ckptdir/resume"
+    # ckpt_dir = "../bucket_3690/results/CIPS-3D/ffhq_diffcam_exp_v4/train_ffhq-20220222_225039_342/ckptdir/resume"
     # ckpt_dir = "../bucket_3690/results/CIPS-3D/ffhq_diffcam_exp_v4/train_ffhq-20220223_134902_190/ckptdir/resume"
+    ckpt_dir = "../bucket_3690/results/CIPS-3D/ffhq_diffcam_exp_v4/train_ffhq_freeze_nerf-20220224_115722_103/ckptdir/resume"
     # ckpt_dir = None
 
     if ckpt_dir is not None:
       load_G_cfg = TLCfgNode.load_yaml_file(cfg_filename=f"{os.path.abspath(ckpt_dir)}/config_command.yaml")
       load_G_cfg = list(load_G_cfg.values())[0]
       # load_G_cfg.G_cfg.shape_block_end_index = 8
-      load_G_cfg.G_cfg.nerf_cfg.shape_net_cfg.gradient_scale = 1/15
+      # load_G_cfg.G_cfg.nerf_cfg.shape_net_cfg.gradient_scale = 1/15
       D = torch.load(f"{os.path.abspath(ckpt_dir)}/discriminator_model.pth")
     else:
       load_G_cfg = cfg
@@ -1965,6 +1984,110 @@ class Testing_ffhq_diffcam_exp_v4(unittest.TestCase):
         export PYTHONPATH=.:./tl2_lib
         python -c "from exp.tests.test_cips3d_inversion import Testing_ffhq_diffcam_exp_v4;\
           Testing_ffhq_diffcam_exp_v4().test_train_ffhq(debug=False)" \
+          --tl_opts \
+            batch_size 4 img_size 32 \
+            G_cfg.nerf_cfg.scale_factor None G_cfg.inr_block_end_index 1 \
+            load_finetune False \
+          --tl_outdir results/ffhq_exp/train_ffhq
+
+
+    :return:
+    """
+    if 'CUDA_VISIBLE_DEVICES' not in os.environ:
+      os.environ['CUDA_VISIBLE_DEVICES'] = '1'
+    if 'TIME_STR' not in os.environ:
+      os.environ['TIME_STR'] = '0'
+    if 'RUN_NUM' not in os.environ:
+      os.environ['RUN_NUM'] = '0'
+    from tl2 import tl2_utils
+    from tl2.launch.launch_utils import \
+      (get_command_and_outdir, setup_outdir_and_yaml, get_append_cmd_str, start_cmd_run)
+
+    tl_opts_list = tl2_utils.parser_args_from_list(name="--tl_opts", argv_list=sys.argv, type='list')
+    tl_opts = ' '.join(tl_opts_list)
+    print(f'tl_opts:\n {tl_opts}')
+
+    if debug:
+      # sys.argv.extend(['--tl_outdir', 'results/ffhq_exp/train_ffhq'])
+      pass
+    command, outdir = get_command_and_outdir(self, func_name=sys._getframe().f_code.co_name, file=__file__)
+    resume = os.path.isdir(f"{outdir}/ckptdir/resume") and \
+             tl2_utils.parser_args_from_list(name="--tl_outdir", argv_list=sys.argv, type='str') is not None
+    argv_str = f"""
+                --tl_config_file exp/cips3d_inversion/configs/ffhq_diffcam_exp_v4.yaml
+                --tl_command {command}
+                --tl_outdir {outdir}
+                {"--tl_resume --tl_resumedir " + outdir if resume else ""}
+                --tl_opts {tl_opts}
+                """
+    args, cfg = setup_outdir_and_yaml(argv_str, return_cfg=True)
+
+    if int(os.environ['RUN_NUM']) > 0:
+      run_command = f"""
+                  python -c "from tl2.modelarts.tests.test_run import TestingRun;\
+                        TestingRun().test_run_v2(number={os.environ['RUN_NUM']}, )" \
+                        --tl_opts root_obs {cfg.root_obs}
+                  """
+      p = tl2_utils.Worker(name='Run', args=(run_command,))
+      p.start()
+
+    n_gpus = len(os.environ['CUDA_VISIBLE_DEVICES'].split(','))
+    PORT = os.environ.get('PORT', 12345)
+
+    os.environ['DNNLIB_CACHE_DIR'] = "cache_dnnlib"
+    os.environ['TORCH_EXTENSIONS_DIR'] = "cache_torch_extensions"
+    os.environ['PATH'] = f"{os.path.dirname(sys.executable)}:{os.environ['PATH']}"
+    os.environ['MAX_JOBS '] = "8"
+
+    cmd_str = f"""
+        python 
+        exp/cips3d_inversion/scripts/train.py
+        --port {PORT}
+
+        {get_append_cmd_str(args)}
+        """
+    if debug:
+      cmd_str += f"""
+                  --tl_debug
+                  --tl_opts num_workers 0
+                  """
+    else:
+      cmd_str += f"""
+                  --tl_opts num_workers {n_gpus} 
+                    {tl_opts}
+                  """
+    start_cmd_run(cmd_str)
+    # from tl2.launch.launch_utils import update_parser_defaults_from_yaml, global_cfg
+    # from tl2.modelarts import moxing_utils
+
+    # update_parser_defaults_from_yaml(parser)
+    # if rank == 0:
+    #   moxing_utils.setup_tl_outdir_obs(global_cfg)
+    #   moxing_utils.modelarts_sync_results_dir(global_cfg, join=True)
+
+    # moxing_utils.modelarts_sync_results_dir(global_cfg, join=True)
+
+    # modelarts_utils.setup_tl_outdir_obs(global_cfg)
+    # modelarts_utils.modelarts_sync_results_dir(global_cfg, join=True)
+    # modelarts_utils.prepare_dataset(global_cfg.get('modelarts_download', {}), global_cfg=global_cfg)
+    #
+    # modelarts_utils.prepare_dataset(global_cfg.get('modelarts_upload', {}), global_cfg=global_cfg, download=False)
+    # modelarts_utils.modelarts_sync_results_dir(global_cfg, join=True)
+    pass
+
+  def test_train_ffhq_freeze_nerf(self, debug=True):
+    """
+    Usage:
+
+        # export CUDA_VISIBLE_DEVICES=$cuda_devices
+        # export RUN_NUM=$run_num
+
+        export CUDA_VISIBLE_DEVICES=0,1
+        export PORT=12345
+        export TIME_STR=0
+        export PYTHONPATH=.:./tl2_lib
+        python -c "from exp.tests.test_cips3d_inversion import Testing_ffhq_diffcam_exp_v4;\
+          Testing_ffhq_diffcam_exp_v4().test_train_ffhq_freeze_nerf(debug=False)" \
           --tl_opts \
             batch_size 4 img_size 32 \
             G_cfg.nerf_cfg.scale_factor None G_cfg.inr_block_end_index 1 \

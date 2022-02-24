@@ -21,6 +21,7 @@ modelarts_download: &modelarts_download
 
 
 network_pkl: &network_pkl
+  v4_FFHQ_r256_shape2_posenc_inr9: "/home/ma-user/work/ZhouPeng/bucket_3690/results/CIPS-3D/ffhq_diffcam_exp_v4/train_ffhq_freeze_nerf-20220224_115722_103/ckptdir/resume/G_ema.pth"
   v4_FFHQ_r64_shape2_posenc_freq_shift486: "/home/ma-user/work/ZhouPeng/bucket_3690/results/CIPS-3D/ffhq_diffcam_exp_v4/train_ffhq-20220223_134902_190/ckptdir/resume/G_ema.pth"
   v4_FFHQ_r128_shape2_posenc_inr1: "/home/ma-user/work/ZhouPeng/bucket_3690/results/CIPS-3D/ffhq_diffcam_exp_v4/train_ffhq-20220223_104711_687/ckptdir/resume/G_ema.pth"
 #  v4_FFHQ_r128_shape2_posenc_inr9: "/home/ma-user/work/ZhouPeng/bucket_3690/results/CIPS-3D/ffhq_diffcam_exp_v4/train_ffhq-20220223_093152_188/ckptdir/resume/G_ema.pth"
@@ -68,7 +69,7 @@ shape_net_cfg: &shape_net_cfg
 #  freq_shift: 4.86
   freq_scale: 15.
   freq_shift: 30.
-  gradient_scale: 1/15
+  gradient_scale: null
 
 app_net_cfg: &app_net_cfg
 #  input_dim: 64
@@ -248,23 +249,23 @@ train_ffhq:
   finetune_dir: "results/CIPS-3D/ffhq_diffcam_exp/train_ffhq-20220124_164043_043/ckptdir/resume"
 
 
-train_ffhq_high:
+train_ffhq_freeze_nerf:
   base: train_ffhq
   train_aux_img: false
   D_cfg:
     diffaug: true
   G_cfg:
-    name: exp.cips3d.models.generator_v1.GeneratorNerfINR_freeze_NeRF
+    name: exp.cips3d_inversion.models.generator_v4.Generator_Diffcam_FreezeNeRF
   diffaug: true
   gen_lr: 0.0001
   disc_lr: 0.0005
   warmup_D: true
   fade_steps: 10000
-  img_size: 256
+  img_size: 128
   load_nerf_ema: true
   load_finetune: true
   nerf_noise_disable: true
-  finetune_dir: "results/CIPS-3D/ffhq_exp_v1/train_ffhq-20220111_034327_756/ckptdir/resume"
+  finetune_dir: "results/CIPS-3D/ffhq_diffcam_exp_v4/train_ffhq-20220223_104711_687/ckptdir/resume"
 
 
 
@@ -330,7 +331,7 @@ sampling_yaw_web:
     G_cfg: *G_cfg_3D2D
     G_kwargs: *G_kwargs
     network_pkl: *network_pkl
-    default_network_pkl: v4_FFHQ_r64_shape2_posenc_freq_shift486
+    default_network_pkl: v4_FFHQ_r256_shape2_posenc_inr9
     network_pkl_model: *network_pkl_model
     default_network_pkl_model: FFHQ_r64_siren_b1
     use_network_pkl_model: false

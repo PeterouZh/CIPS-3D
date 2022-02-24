@@ -970,6 +970,11 @@ class Generator_Diffcam(nn.Module):
       x=points,  # b (Nrays Nsamples) c
       ray_directions=coarse_viewdirs, # b (Nrays Nsamples) c
       style_dict=style_dict)
+    # Mask out values outside
+    padd = 0.
+    mask_box = torch.all(points <= 1. + padd, dim=-1) & torch.all(points >= -1. - padd, dim=-1)
+    coarse_output[mask_box == 0] = 0.
+
     coarse_output = rearrange(
       coarse_output, "b (Nrays Nsamples) rgb_sigma -> b Nrays Nsamples rgb_sigma", Nsamples=N_samples)
 
@@ -1262,135 +1267,147 @@ class Generator_Diffcam(nn.Module):
 
 
 @MODEL_REGISTRY.register(name_prefix=__name__)
-class GeneratorNerfINR_freeze_NeRF(Generator_Diffcam):
+class Generator_Diffcam_FreezeNeRF(Generator_Diffcam):
 
   def load_nerf_ema(self, G_ema):
     ret = self.nerf_net.load_state_dict(G_ema.nerf_net.state_dict())
-    ret = self.mapping_network_nerf.load_state_dict(G_ema.mapping_network_nerf.state_dict())
+    ret = self.mapping_shape.load_state_dict(G_ema.mapping_shape.state_dict())
+    ret = self.mapping_app.load_state_dict(G_ema.mapping_app.state_dict())
+
     ret = self.aux_to_rbg.load_state_dict(G_ema.aux_to_rbg.state_dict())
 
-    ret = self.mapping_network_inr.load_state_dict(G_ema.mapping_network_inr.state_dict())
-    ret = self.nerf_rgb_mapping.load_state_dict(G_ema.nerf_rgb_mapping.state_dict())
+    # ret = self.mapping_inr.load_state_dict(G_ema.mapping_inr.state_dict())
     pass
 
+  def forward(self, **kwargs):
+
+    self.nerf_net.requires_grad_(False)
+    self.mapping_shape.requires_grad_(False)
+    self.mapping_app.requires_grad_(False)
+    self.aux_to_rbg.requires_grad_(False)
+
+    return super(Generator_Diffcam_FreezeNeRF, self).forward(**kwargs)
+
   def mapping_network(self,
-                      z_nerf,
+                      z_shape,
+                      z_app,
                       z_inr):
     style_dict = {}
     with torch.no_grad():
-      style_dict.update(self.mapping_network_nerf(z_nerf))
-      style_dict.update(self.mapping_network_inr(z_inr))
-      style_dict['nerf_rgb'] = self.nerf_rgb_mapping(style_dict['nerf_rgb'])
+      style_dict.update(self.mapping_shape(z_shape))
+      style_dict.update(self.mapping_app(z_app))
+    style_dict.update(self.mapping_inr(z_inr))
+
 
     return style_dict
 
-  def points_forward(self,
-                     style_dict,
-                     transformed_points,
-                     transformed_ray_directions_expanded,
-                     num_steps,
-                     hierarchical_sample,
-                     z_vals,
-                     clamp_mode,
-                     nerf_noise,
-                     transformed_ray_origins,
-                     transformed_ray_directions,
-                     white_back,
-                     last_back,
-                     return_aux_img,
-                     idx_grad=None,
-                     ):
-    """
-
-    :param style_dict:
-    :param transformed_points: (b, n, s, 3)
-    :param transformed_ray_directions_expanded: (b, n, s, 3)
-    :param num_steps: sampled points along a ray
-    :param hierarchical_sample:
-    :param z_vals: (b, n, s, 1)
-    :param clamp_mode: 'relu'
-    :param nerf_noise:
-    :param transformed_ray_origins: (b, n, 3)
-    :param transformed_ray_directions: (b, n, 3)
-    :param white_back:
-    :param last_back:
-    :return:
-    """
-    device = transformed_points.device
-    if idx_grad is not None:
-      transformed_points = comm_utils.gather_points(points=transformed_points, idx_grad=idx_grad)
-      transformed_ray_directions_expanded = comm_utils.gather_points(
-        points=transformed_ray_directions_expanded, idx_grad=idx_grad)
-      z_vals = comm_utils.gather_points(points=z_vals, idx_grad=idx_grad)
-      transformed_ray_origins = comm_utils.gather_points(points=transformed_ray_origins, idx_grad=idx_grad)
-      transformed_ray_directions = comm_utils.gather_points(points=transformed_ray_directions, idx_grad=idx_grad)
-
-    transformed_points = rearrange(transformed_points, "b n s c -> b (n s) c")
-    transformed_ray_directions_expanded = rearrange(transformed_ray_directions_expanded, "b n s c -> b (n s) c")
-
-    # Model prediction on course points
-    with torch.no_grad():
-      coarse_output = self.nerf_net(
-        x=transformed_points,  # (b, n x s, 3)
-        style_dict=style_dict,
-        ray_directions=transformed_ray_directions_expanded,
-      )
-    coarse_output = rearrange(coarse_output, "b (n s) rgb_sigma -> b n s rgb_sigma", s=num_steps)
-
-    # Re-sample fine points alont camera rays, as described in NeRF
-    if hierarchical_sample:
-      fine_points, fine_z_vals = self.get_fine_points_and_direction(
-        coarse_output=coarse_output,
-        z_vals=z_vals,
-        dim_rgb=self.nerf_net.rgb_dim,
-        clamp_mode=clamp_mode,
-        nerf_noise=nerf_noise,
-        num_steps=num_steps,
-        transformed_ray_origins=transformed_ray_origins,
-        transformed_ray_directions=transformed_ray_directions
-      )
-
-      # Model prediction on re-sampled find points
-      with torch.no_grad():
-        fine_output = self.nerf_net(
-          x=fine_points,  # (b, n x s, 3)
-          style_dict=style_dict,
-          ray_directions=transformed_ray_directions_expanded,  # (b, n x s, 3)
-        )
-      fine_output = rearrange(fine_output, "b (n s) rgb_sigma -> b n s rgb_sigma", s=num_steps)
-
-      # Combine course and fine points
-      all_outputs = torch.cat([fine_output, coarse_output], dim=-2)  # (b, n, s, dim_rgb_sigma)
-      all_z_vals = torch.cat([fine_z_vals, z_vals], dim=-2)  # (b, n, s, 1)
-      _, indices = torch.sort(all_z_vals, dim=-2)  # (b, n, s, 1)
-      all_z_vals = torch.gather(all_z_vals, -2, indices)  # (b, n, s, 1)
-      # (b, n, s, dim_rgb_sigma)
-      all_outputs = torch.gather(all_outputs, -2, indices.expand(-1, -1, -1, all_outputs.shape[-1]))
-    else:
-      all_outputs = coarse_output
-      all_z_vals = z_vals
-
-    # Create images with NeRF
-    pixels_fea, depth, weights = pigan_utils.fancy_integration(
-      rgb_sigma=all_outputs,
-      z_vals=all_z_vals,
-      device=device,
-      dim_rgb=self.nerf_net.rgb_dim,
-      white_back=white_back,
-      last_back=last_back,
-      clamp_mode=clamp_mode,
-      noise_std=nerf_noise)
-
-    inr_img = self.inr_net(pixels_fea, style_dict)
-
-    if return_aux_img:
-      # aux rgb_branch
-      with torch.no_grad():
-        aux_img = self.aux_to_rbg(pixels_fea)
-    else:
-      aux_img = None
-
-    return inr_img, aux_img
+  # def points_forward(self,
+  #                    style_dict,
+  #                    transformed_points,
+  #                    transformed_ray_directions_expanded,
+  #                    num_steps,
+  #                    hierarchical_sample,
+  #                    z_vals,
+  #                    clamp_mode,
+  #                    nerf_noise,
+  #                    transformed_ray_origins,
+  #                    transformed_ray_directions,
+  #                    white_back,
+  #                    last_back,
+  #                    return_aux_img,
+  #                    idx_grad=None,
+  #                    ):
+  #   """
+  #
+  #   :param style_dict:
+  #   :param transformed_points: (b, n, s, 3)
+  #   :param transformed_ray_directions_expanded: (b, n, s, 3)
+  #   :param num_steps: sampled points along a ray
+  #   :param hierarchical_sample:
+  #   :param z_vals: (b, n, s, 1)
+  #   :param clamp_mode: 'relu'
+  #   :param nerf_noise:
+  #   :param transformed_ray_origins: (b, n, 3)
+  #   :param transformed_ray_directions: (b, n, 3)
+  #   :param white_back:
+  #   :param last_back:
+  #   :return:
+  #   """
+  #   device = transformed_points.device
+  #   if idx_grad is not None:
+  #     transformed_points = comm_utils.gather_points(points=transformed_points, idx_grad=idx_grad)
+  #     transformed_ray_directions_expanded = comm_utils.gather_points(
+  #       points=transformed_ray_directions_expanded, idx_grad=idx_grad)
+  #     z_vals = comm_utils.gather_points(points=z_vals, idx_grad=idx_grad)
+  #     transformed_ray_origins = comm_utils.gather_points(points=transformed_ray_origins, idx_grad=idx_grad)
+  #     transformed_ray_directions = comm_utils.gather_points(points=transformed_ray_directions, idx_grad=idx_grad)
+  #
+  #   transformed_points = rearrange(transformed_points, "b n s c -> b (n s) c")
+  #   transformed_ray_directions_expanded = rearrange(transformed_ray_directions_expanded, "b n s c -> b (n s) c")
+  #
+  #   # Model prediction on course points
+  #   with torch.no_grad():
+  #     coarse_output = self.nerf_net(
+  #       x=transformed_points,  # (b, n x s, 3)
+  #       style_dict=style_dict,
+  #       ray_directions=transformed_ray_directions_expanded,
+  #     )
+  #   coarse_output = rearrange(coarse_output, "b (n s) rgb_sigma -> b n s rgb_sigma", s=num_steps)
+  #
+  #   # Re-sample fine points alont camera rays, as described in NeRF
+  #   if hierarchical_sample:
+  #     fine_points, fine_z_vals = self.get_fine_points_and_direction(
+  #       coarse_output=coarse_output,
+  #       z_vals=z_vals,
+  #       dim_rgb=self.nerf_net.rgb_dim,
+  #       clamp_mode=clamp_mode,
+  #       nerf_noise=nerf_noise,
+  #       num_steps=num_steps,
+  #       transformed_ray_origins=transformed_ray_origins,
+  #       transformed_ray_directions=transformed_ray_directions
+  #     )
+  #
+  #     # Model prediction on re-sampled find points
+  #     with torch.no_grad():
+  #       fine_output = self.nerf_net(
+  #         x=fine_points,  # (b, n x s, 3)
+  #         style_dict=style_dict,
+  #         ray_directions=transformed_ray_directions_expanded,  # (b, n x s, 3)
+  #       )
+  #     fine_output = rearrange(fine_output, "b (n s) rgb_sigma -> b n s rgb_sigma", s=num_steps)
+  #
+  #     # Combine course and fine points
+  #     all_outputs = torch.cat([fine_output, coarse_output], dim=-2)  # (b, n, s, dim_rgb_sigma)
+  #     all_z_vals = torch.cat([fine_z_vals, z_vals], dim=-2)  # (b, n, s, 1)
+  #     _, indices = torch.sort(all_z_vals, dim=-2)  # (b, n, s, 1)
+  #     all_z_vals = torch.gather(all_z_vals, -2, indices)  # (b, n, s, 1)
+  #     # (b, n, s, dim_rgb_sigma)
+  #     all_outputs = torch.gather(all_outputs, -2, indices.expand(-1, -1, -1, all_outputs.shape[-1]))
+  #   else:
+  #     all_outputs = coarse_output
+  #     all_z_vals = z_vals
+  #
+  #   # Create images with NeRF
+  #   pixels_fea, depth, weights = pigan_utils.fancy_integration(
+  #     rgb_sigma=all_outputs,
+  #     z_vals=all_z_vals,
+  #     device=device,
+  #     dim_rgb=self.nerf_net.rgb_dim,
+  #     white_back=white_back,
+  #     last_back=last_back,
+  #     clamp_mode=clamp_mode,
+  #     noise_std=nerf_noise)
+  #
+  #   inr_img = self.inr_net(pixels_fea, style_dict)
+  #
+  #   if return_aux_img:
+  #     # aux rgb_branch
+  #     with torch.no_grad():
+  #       aux_img = self.aux_to_rbg(pixels_fea)
+  #   else:
+  #     aux_img = None
+  #
+  #   return inr_img, aux_img
 
 
 

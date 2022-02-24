@@ -47,6 +47,13 @@ def interpolate_sphere(z1,
   return z
 
 
+def norm_ip(img, low, high):
+  img = img.clone()
+  img.clamp_(min=low, max=high)
+  img.sub_(low).div_(max(high - low, 1e-5))
+  return img
+
+
 @MODEL_REGISTRY.register(name_prefix=__name__)
 class STModel(object):
   def __init__(self):
@@ -182,6 +189,9 @@ class STModel(object):
     yaw_max = st_utils.number_input('yaw_max', cfg.yaw_max, sidebar=True, format="%.3f")
     N_step = st_utils.number_input('N_step', cfg.N_step, sidebar=True)
 
+    show_depth = st_utils.checkbox('show_depth', True)
+    show_weights_sum = st_utils.checkbox('show_weights_sum', True)
+
     seed = st_utils.get_seed(seeds=cfg.seeds)
 
     if not global_cfg.tl_debug:
@@ -238,7 +248,24 @@ class STModel(object):
                            return_aux_img=True,
                            **{**G_kwargs,
                               'psi': psi})
-      img = make_grid(imgs, nrow=int(math.sqrt(bs)), normalize=True, scale_each=True)
+        g_imgs_aux = ret_imgs['aux_img']
+
+        imgs = norm_ip(imgs, -1, 1)
+        g_imgs_aux = norm_ip(g_imgs_aux, -1, 1)
+        img_list = [imgs, g_imgs_aux]
+
+        if show_depth:
+          depth_img = ret_imgs['depth'][:, None].expand(-1, 3, -1, -1)
+          depth_img = norm_ip(depth_img, 0, 1.5)
+          img_list.append(depth_img)
+        if show_weights_sum:
+          weights_sum = ret_imgs['weights_sum'][:, None].expand(-1, 3, -1, -1)
+          weights_sum = norm_ip(weights_sum, 0, 1)
+          img_list.append(weights_sum)
+
+        gen_imgs = torch.cat(img_list, dim=0)
+
+      img = make_grid(gen_imgs, nrow=bs, normalize=False, scale_each=True)
       img_pil = tv_f.to_pil_image(img)
       img_str = f"{idx}/{N_step}, yaw={yaw_:.2f}"
       pil_utils.add_text(img_pil, img_str, size=img_pil.size[0] // 18)
