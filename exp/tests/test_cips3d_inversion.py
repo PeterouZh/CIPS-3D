@@ -890,7 +890,7 @@ class Testing_ffhq_diffcam_exp_v1(unittest.TestCase):
 
 class Testing_ffhq_diffcam_exp_v2(unittest.TestCase):
   """
-  NeRF: siren_skip + cips_net;
+  NeRF: siren_skip_net + cips_net;
   issue: large G gradients;
 
   """
@@ -1332,7 +1332,7 @@ class Testing_ffhq_diffcam_exp_v2(unittest.TestCase):
 
 class Testing_ffhq_diffcam_exp_v3(unittest.TestCase):
   """
-  shape app inr: mod_fc_siren + cips_net + cips_net;
+  shape app inr: mod_fc + siren, cips_net, cips_net;
   grad_clip for nerf_net;
 
   """
@@ -1724,7 +1724,7 @@ class Testing_ffhq_diffcam_exp_v3(unittest.TestCase):
 
 class Testing_ffhq_diffcam_exp_v4(unittest.TestCase):
   """
-  shape app inr: mod_film + cips_net + cips_net;
+  shape app inr: mod_film, cips_net, cips_net;
 
   """
 
@@ -2238,4 +2238,255 @@ class Testing_ffhq_diffcam_exp_v4(unittest.TestCase):
             --tl_opts {tl_opts}
         """
     start_cmd_run(cmd_str)
+    pass
+
+
+class Testing_ffhq_diffcam_exp_v5(unittest.TestCase):
+  """
+  shape app inr: pigan (mod_film), pigan (mod_film), cips_net;
+  gradient detach;
+
+  """
+
+  def test__build_generator(self, debug=True):
+    """
+    Usage:
+
+        # export CUDA_VISIBLE_DEVICES=$cuda_devices
+        # export RUN_NUM=$run_num
+
+        export CUDA_VISIBLE_DEVICES=0,1,2,3,4,5,6,7
+        export PORT=12345
+        export TIME_STR=1
+        export PYTHONPATH=.
+        python -c "from tl2.launch.tests.test_launch import Testing_Launch_v1;\
+          Testing_Launch_v1().test_launch_ddp(debug=False)" \
+          --tl_opts root_obs s3://$bucket/ZhouPeng/ \
+          --tl_outdir results/train_ffhq_256/train_ffhq_256-20210726_202423_412
+          # --tl_outdir results/$resume_dir
+
+    :return:
+    """
+    if 'CUDA_VISIBLE_DEVICES' not in os.environ:
+      os.environ['CUDA_VISIBLE_DEVICES'] = '1'
+    if 'TIME_STR' not in os.environ:
+      os.environ['TIME_STR'] = '0'
+    if 'RUN_NUM' not in os.environ:
+      os.environ['RUN_NUM'] = '0'
+    from tl2 import tl2_utils
+    from tl2.launch.launch_utils import \
+      (get_command_and_outdir, setup_outdir_and_yaml, get_append_cmd_str, start_cmd_run)
+
+    tl_opts_list = tl2_utils.parser_args_from_list(name="--tl_opts", argv_list=sys.argv, type='list')
+    tl_opts = ' '.join(tl_opts_list)
+    print(f'tl_opts:\n {tl_opts}')
+
+    if debug:
+      # sys.argv.extend(['--tl_outdir', 'results/train_ffhq_256/train_ffhq_256-test'])
+      pass
+    command, outdir = get_command_and_outdir(self, func_name=sys._getframe().f_code.co_name, file=__file__)
+    resume = os.path.isdir(f"{outdir}/ckptdir/resume") and \
+             tl2_utils.parser_args_from_list(name="--tl_outdir", argv_list=sys.argv, type='str') is not None
+    argv_str = f"""
+                --tl_config_file exp/cips3d_inversion/configs/ffhq_diffcam_exp_v5.yaml
+                --tl_command {command}
+                --tl_outdir {outdir}
+                {"--tl_resume --tl_resumedir " + outdir if resume else ""}
+                --tl_opts {tl_opts} 
+                --tl_debug True
+                """
+    args, cfg = setup_outdir_and_yaml(argv_str, return_cfg=True)
+
+    os.environ['DNNLIB_CACHE_DIR'] = "cache_dnnlib"
+    os.environ['TORCH_EXTENSIONS_DIR'] = "cache_torch_extensions"
+    os.environ['PATH'] = f"{os.path.dirname(sys.executable)}:{os.environ['PATH']}"
+    os.environ['MAX_JOBS '] = "8"
+
+    from torchvision.utils import make_grid
+    import torchvision.transforms.functional as tv_f
+    from tl2.proj.fvcore import build_model, TLCfgNode
+    from tl2.proj.fvcore.checkpoint import Checkpointer
+    from tl2.proj.pil import pil_utils
+    from tl2.proj.pytorch import torch_utils
+    from tl2.proj.pytorch.examples.nerf import cam_params
+    from exp.cips3d_inversion.models.generator_v5 import Generator_Diffcam
+
+    torch_utils.init_seeds(seed=0)
+
+    device = 'cuda'
+
+    # G = build_model(cfg.G_cfg).to(device)
+    # Checkpointer(G).load_state_dict_from_file(cfg.network_pkl)
+
+    metadata = cfg.G_kwargs
+    metadata['nerf_kwargs']['h_stddev'] = 0.
+    metadata['nerf_kwargs']['v_stddev'] = 0.
+
+    num_imgs = 2
+    H = W = 64
+    # N_rays = 1024
+    N_rays = -1
+
+    ckpt_dir = "../bucket_3690/results/CIPS-3D/ffhq_diffcam_exp_v5/train_ffhq-20220225_144057_120/ckptdir/resume"
+    # ckpt_dir = None
+
+    if ckpt_dir is not None:
+      load_G_cfg = TLCfgNode.load_yaml_file(cfg_filename=f"{os.path.abspath(ckpt_dir)}/config_command.yaml")
+      load_G_cfg = list(load_G_cfg.values())[0]
+
+      # load_G_cfg.G_cfg.shape_block_end_index = 8
+      load_G_cfg.G_cfg.nerf_cfg.shape_net_cfg.grad_norm_layer = True
+
+      D = torch.load(f"{os.path.abspath(ckpt_dir)}/discriminator_model.pth")
+    else:
+      load_G_cfg = cfg
+      D = None
+    G = Generator_Diffcam(**load_G_cfg.G_cfg).to(device)
+
+    cam_param = cam_params.CamParams.from_config(H0=H, W0=W, **load_G_cfg.get('cam_cfg', {})).cuda()
+
+    model_dict = {
+      # 'G_ema': G,
+      'generator': G,
+      'cam_param': cam_param
+    }
+    if ckpt_dir is not None:
+      torch_utils.load_models(ckpt_dir, model_dict=model_dict)
+
+    intr = cam_param(mode='get_intrinsic')
+    rays_o, rays_d, select_inds = cam_param.get_rays_random_pose(
+      device=device, bs=num_imgs, intr=intr, **metadata.nerf_kwargs)
+
+    # G.eval()
+    zs = G.get_zs(num_imgs)
+
+    with torch.set_grad_enabled(True):
+      imgs, ret_imgs = G(zs=zs,
+                         rays_o=rays_o,
+                         rays_d=rays_d,
+                         forward_points=256 ** 2,  # disable gradients
+                         return_aux_img=True,
+                         **metadata)
+
+      if D is not None:
+        g_imgs_aux = ret_imgs['aux_img']
+        gen_imgs = torch.cat([imgs, g_imgs_aux], dim=0)
+
+        g_preds, _, _ = D(gen_imgs.to(torch.float32), alpha=1, use_aux_disc=True)
+        g_loss = torch.nn.functional.softplus(-g_preds).mean()
+        g_loss.backward()
+        grad_str = torch_utils.get_grad_norm_string(G.named_parameters(), )
+        print(grad_str)
+
+        grad_dict = G.get_subnet_grad_norm()
+        # G_total_norm = torch.nn.utils.clip_grad_norm_(G.parameters(), 10.)
+
+    img = make_grid(imgs, nrow=2, normalize=True, scale_each=True)
+    img_pil = tv_f.to_pil_image(img)
+    pil_utils.imshow_pil(img_pil, f"whole {imgs.shape}")
+
+    pass
+
+  def test_train_ffhq(self, debug=True):
+    """
+    Usage:
+
+        # export CUDA_VISIBLE_DEVICES=$cuda_devices
+        # export RUN_NUM=$run_num
+
+        export CUDA_VISIBLE_DEVICES=0,1
+        export PORT=12345
+        export TIME_STR=0
+        export PYTHONPATH=.:./tl2_lib
+        python -c "from exp.tests.test_cips3d_inversion import Testing_ffhq_diffcam_exp_v5;\
+          Testing_ffhq_diffcam_exp_v5().test_train_ffhq(debug=False)" \
+          --tl_opts \
+            batch_size 4 img_size 32 \
+            G_cfg.nerf_cfg.scale_factor None G_cfg.inr_block_end_index 1 \
+            load_finetune False \
+          --tl_outdir results/ffhq_exp/train_ffhq
+
+
+    :return:
+    """
+    if 'CUDA_VISIBLE_DEVICES' not in os.environ:
+      os.environ['CUDA_VISIBLE_DEVICES'] = '1'
+    if 'TIME_STR' not in os.environ:
+      os.environ['TIME_STR'] = '0'
+    if 'RUN_NUM' not in os.environ:
+      os.environ['RUN_NUM'] = '0'
+    from tl2 import tl2_utils
+    from tl2.launch.launch_utils import \
+      (get_command_and_outdir, setup_outdir_and_yaml, get_append_cmd_str, start_cmd_run)
+
+    tl_opts_list = tl2_utils.parser_args_from_list(name="--tl_opts", argv_list=sys.argv, type='list')
+    tl_opts = ' '.join(tl_opts_list)
+    print(f'tl_opts:\n {tl_opts}')
+
+    if debug:
+      # sys.argv.extend(['--tl_outdir', 'results/ffhq_exp/train_ffhq'])
+      pass
+    command, outdir = get_command_and_outdir(self, func_name=sys._getframe().f_code.co_name, file=__file__)
+    resume = os.path.isdir(f"{outdir}/ckptdir/resume") and \
+             tl2_utils.parser_args_from_list(name="--tl_outdir", argv_list=sys.argv, type='str') is not None
+    argv_str = f"""
+                --tl_config_file exp/cips3d_inversion/configs/ffhq_diffcam_exp_v5.yaml
+                --tl_command {command}
+                --tl_outdir {outdir}
+                {"--tl_resume --tl_resumedir " + outdir if resume else ""}
+                --tl_opts {tl_opts}
+                """
+    args, cfg = setup_outdir_and_yaml(argv_str, return_cfg=True)
+
+    if int(os.environ['RUN_NUM']) > 0:
+      run_command = f"""
+                  python -c "from tl2.modelarts.tests.test_run import TestingRun;\
+                        TestingRun().test_run_v2(number={os.environ['RUN_NUM']}, )" \
+                        --tl_opts root_obs {cfg.root_obs}
+                  """
+      p = tl2_utils.Worker(name='Run', args=(run_command,))
+      p.start()
+
+    n_gpus = len(os.environ['CUDA_VISIBLE_DEVICES'].split(','))
+    PORT = os.environ.get('PORT', 12345)
+
+    os.environ['DNNLIB_CACHE_DIR'] = "cache_dnnlib"
+    os.environ['TORCH_EXTENSIONS_DIR'] = "cache_torch_extensions"
+    os.environ['PATH'] = f"{os.path.dirname(sys.executable)}:{os.environ['PATH']}"
+    os.environ['MAX_JOBS '] = "8"
+
+    cmd_str = f"""
+        python 
+        exp/cips3d_inversion/scripts/train.py
+        --port {PORT}
+
+        {get_append_cmd_str(args)}
+        """
+    if debug:
+      cmd_str += f"""
+                  --tl_debug
+                  --tl_opts num_workers 0
+                  """
+    else:
+      cmd_str += f"""
+                  --tl_opts num_workers {n_gpus} 
+                    {tl_opts}
+                  """
+    start_cmd_run(cmd_str)
+    # from tl2.launch.launch_utils import update_parser_defaults_from_yaml, global_cfg
+    # from tl2.modelarts import moxing_utils
+
+    # update_parser_defaults_from_yaml(parser)
+    # if rank == 0:
+    #   moxing_utils.setup_tl_outdir_obs(global_cfg)
+    #   moxing_utils.modelarts_sync_results_dir(global_cfg, join=True)
+
+    # moxing_utils.modelarts_sync_results_dir(global_cfg, join=True)
+
+    # modelarts_utils.setup_tl_outdir_obs(global_cfg)
+    # modelarts_utils.modelarts_sync_results_dir(global_cfg, join=True)
+    # modelarts_utils.prepare_dataset(global_cfg.get('modelarts_download', {}), global_cfg=global_cfg)
+    #
+    # modelarts_utils.prepare_dataset(global_cfg.get('modelarts_upload', {}), global_cfg=global_cfg, download=False)
+    # modelarts_utils.modelarts_sync_results_dir(global_cfg, join=True)
     pass

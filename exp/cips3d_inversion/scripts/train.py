@@ -568,6 +568,8 @@ def train(rank,
         summary_ddict['G_total_norm'].update(grad_dict)
         G_total_norm = torch.nn.utils.clip_grad_norm_(generator.nerf_net.parameters(),
                                                       global_cfg.grad_clip)
+        G_total_norm = torch.nn.utils.clip_grad_norm_(generator.mapping_shape.parameters(),
+                                                      global_cfg.grad_clip)
 
       else:
         G_total_norm = torch.nn.utils.clip_grad_norm_(generator_ddp.parameters(),
