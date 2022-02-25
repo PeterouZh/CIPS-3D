@@ -1765,20 +1765,24 @@ class Testing_ffhq_diffcam_exp_v4(unittest.TestCase):
     title = 'FID_r64'
     log_file = 'textdir/eval.ma0.FID.log'
     dd = eval(title)
-    dd[f'{bucket_root}/results/CIPS-3D/ffhq_diffcam_exp_v4/train_ffhq-20220222_224654_660'] = \
-      {'20220222_224654_660-ffhq_r128-gpu.4x8-shape_block.2-pos_enc.F': f"{log_file}", }
+    # dd[f'{bucket_root}/results/CIPS-3D/ffhq_diffcam_exp_v4/train_ffhq-20220222_224654_660'] = \
+    #   {'20220222_224654_660-ffhq_r128-gpu.4x8-shape_block.2-pos_enc.F': f"{log_file}", }
     dd[f'{bucket_root}/results/CIPS-3D/ffhq_diffcam_exp_v4/train_ffhq-20220222_225039_342'] = \
       {'20220222_225039_342-ffhq_r128-gpu.4x8-shape_block.2-pos_enc.T': f"{log_file}", }
     dd[f'{bucket_root}/results/CIPS-3D/ffhq_diffcam_exp_v4/train_ffhq-20220223_134902_190'] = \
       {'20220223_134902_190-ffhq_r128-gpu.4x8-shape_block.2-pos_enc.T-freq_shift.4.86': f"{log_file}", }
-    dd[f'{bucket_root}/results/CIPS-3D/ffhq_diffcam_exp_v4/train_ffhq-20220223_150208_893'] = \
-      {'20220223_150208_893-ffhq_r128-gpu.4x8-shape_block.2-pos_enc.T-freq_shift.0': f"{log_file}", }
-    dd[f'{bucket_root}/results/CIPS-3D/ffhq_diffcam_exp_v4/train_ffhq-20220223_233549_972'] = \
-      {'20220223_233549_972-ffhq_r128-gpu.4x8-shape_block.8-pos_enc.T-freq_shift.4.86': f"{log_file}", }
-    dd[f'{bucket_root}/results/CIPS-3D/ffhq_diffcam_exp_v4/train_ffhq-20220223_235312_246'] = \
-      {'20220223_235312_246-ffhq_r128-gpu.4x8-shape_block.8-pos_enc.T-freq_shift.30-gs.15': f"{log_file}", }
+    # dd[f'{bucket_root}/results/CIPS-3D/ffhq_diffcam_exp_v4/train_ffhq-20220223_150208_893'] = \
+    #   {'20220223_150208_893-ffhq_r128-gpu.4x8-shape_block.2-pos_enc.T-freq_shift.0': f"{log_file}", }
+    # dd[f'{bucket_root}/results/CIPS-3D/ffhq_diffcam_exp_v4/train_ffhq-20220223_233549_972'] = \
+    #   {'20220223_233549_972-ffhq_r128-gpu.4x8-shape_block.8-pos_enc.T-freq_shift.4.86': f"{log_file}", }
+    # dd[f'{bucket_root}/results/CIPS-3D/ffhq_diffcam_exp_v4/train_ffhq-20220223_235312_246'] = \
+    #   {'20220223_235312_246-ffhq_r128-gpu.4x8-shape_block.8-pos_enc.T-freq_shift.30-gs.15': f"{log_file}", }
     dd[f'{bucket_root}/results/CIPS-3D/ffhq_diffcam_exp_v4/train_ffhq-20220225_164209_334'] = \
       {'20220225_164209_334-ffhq_r128-gpu.4x8-block_idx.2_1_4-inr_detach.T': f"{log_file}", }
+    dd[f'{bucket_root}/results/CIPS-3D/ffhq_diffcam_exp_v4/train_ffhq-20220225_223444_066'] = \
+      {'20220225_223444_066-ffhq_r128-gpu.4x8-block_idx.2_1_9-inr_detach.T': f"{log_file}", }
+    dd[f'{bucket_root}/results/CIPS-3D/ffhq_diffcam_exp_v4/train_ffhq-20220225_225313_381'] = \
+      {'20220225_225313_381-ffhq_r128-gpu.4x8-block_idx.2_1_9-inr_detach.T-app.c128': f"{log_file}", }
 
     dd['properties'] = {'title': title,
                         # 'xlim': [0, 3000000],
@@ -1795,8 +1799,8 @@ class Testing_ffhq_diffcam_exp_v4(unittest.TestCase):
       {'20220223_093152_188-ffhq_r128-gpu.4x8-shape_block.2-pos_enc.T-inr_block.9': f"{log_file}", }
     dd[f'{bucket_root}/results/CIPS-3D/ffhq_diffcam_exp_v4/train_ffhq-20220223_104711_687'] = \
       {'20220223_104711_687-ffhq_r128-gpu.4x8-shape_block.2-pos_enc.T-inr_block.1': f"{log_file}", }
-    dd[f'{bucket_root}/results/CIPS-3D/ffhq_diffcam_exp_v4/train_ffhq-20220224_091527_603'] = \
-      {'20220224_091527_603-ffhq_r128-gpu.4x8-shape_block.2-freq_shift.4.86': f"{log_file}", }
+    # dd[f'{bucket_root}/results/CIPS-3D/ffhq_diffcam_exp_v4/train_ffhq-20220224_091527_603'] = \
+    #   {'20220224_091527_603-ffhq_r128-gpu.4x8-shape_block.2-freq_shift.4.86': f"{log_file}", }
     dd[f'{bucket_root}/results/CIPS-3D/ffhq_diffcam_exp_v4/train_ffhq-20220224_092021_015'] = \
       {'20220224_092021_015-ffhq_r128-gpu.4x8-shape_block.2-freq_shift.4.86': f"{log_file}", }
 
