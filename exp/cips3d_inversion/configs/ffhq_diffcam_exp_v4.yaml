@@ -21,20 +21,21 @@ modelarts_download: &modelarts_download
 
 
 network_pkl: &network_pkl
-  v4_FFHQ_r256_shape2_posenc_inr9: "/home/ma-user/work/ZhouPeng/bucket_3690/results/CIPS-3D/ffhq_diffcam_exp_v4/train_ffhq_freeze_nerf-20220224_115722_103/ckptdir/resume/G_ema.pth"
-  v4_FFHQ_r64_shape2_posenc_freq_shift486: "/home/ma-user/work/ZhouPeng/bucket_3690/results/CIPS-3D/ffhq_diffcam_exp_v4/train_ffhq-20220223_134902_190/ckptdir/resume/G_ema.pth"
-  v4_FFHQ_r128_shape2_posenc_inr1: "/home/ma-user/work/ZhouPeng/bucket_3690/results/CIPS-3D/ffhq_diffcam_exp_v4/train_ffhq-20220223_104711_687/ckptdir/resume/G_ema.pth"
-#  v4_FFHQ_r128_shape2_posenc_inr9: "/home/ma-user/work/ZhouPeng/bucket_3690/results/CIPS-3D/ffhq_diffcam_exp_v4/train_ffhq-20220223_093152_188/ckptdir/resume/G_ema.pth"
-  v4_FFHQ_r64_shape2_posenc: "/home/ma-user/work/ZhouPeng/bucket_3690/results/CIPS-3D/ffhq_diffcam_exp_v4/train_ffhq-20220222_225039_342/ckptdir/resume/G_ema.pth"
-  v4_FFHQ_r64_shape2: "/home/ma-user/work/ZhouPeng/bucket_3690/results/CIPS-3D/ffhq_diffcam_exp_v4/train_ffhq-20220222_224654_660/ckptdir/resume/G_ema.pth"
-  v3_FFHQ_r64_b1: "/home/ma-user/work/ZhouPeng/bucket_3690/results/CIPS-3D/ffhq_diffcam_exp_v3/train_ffhq-20220221_212808_342/ckptdir/resume/G_ema.pth"
-  v3_FFHQ_r64_b3: "/home/ma-user/work/ZhouPeng/bucket_3690/results/CIPS-3D/ffhq_diffcam_exp_v3/train_ffhq-20220221_213111_543/ckptdir/resume/G_ema.pth"
-  FFHQ_r64_siren_b1_norm_d_F: "/home/ma-user/work/ZhouPeng/bucket_3690/results/CIPS-3D/ffhq_diffcam_exp_v2/train_ffhq-20220221_091857_103/ckptdir/resume/G_ema.pth"
-  FFHQ_r64_siren_b1_norm_d_T: "/home/ma-user/work/ZhouPeng/bucket_3690/results/CIPS-3D/ffhq_diffcam_exp_v2/train_ffhq-20220221_092814_741/ckptdir/resume/G_ema.pth"
-  FFHQ_r64_siren_b3: "/home/ma-user/work/ZhouPeng/bucket_3690/results/CIPS-3D/ffhq_diffcam_exp_v2/train_ffhq-20220219_211756_715/ckptdir/resume/G_ema.pth"
-  v2_FFHQ_r64_b1: "/home/ma-user/work/ZhouPeng/bucket_3690/results/CIPS-3D/ffhq_diffcam_exp_v2/train_ffhq-20220219_182559_307/ckptdir/resume/G_ema.pth"
-  FFHQ_r64: "../bucket_3690/results/CIPS-3D/ffhq_diffcam_exp_v1/train_ffhq-20220218_225857_033/ckptdir/resume/G_ema.pth"
-  FFHQ_r128: "../bucket_3690/results/CIPS-3D/ffhq_diffcam_exp_v1/train_ffhq-20220219_104511_901/ckptdir/resume/G_ema.pth"
+  v4_FFHQ_r64_idx_2_1_4_inr_detach: "/home/ma-user/work/ZhouPeng/bucket_3690/results/CIPS-3D/ffhq_diffcam_exp_v4/train_ffhq-20220225_164209_334/ckptdir/resume/G_ema.pth"
+  v4_FFHQ_r128_idx_2_1_1_freq_shift486: "/home/ma-user/work/ZhouPeng/bucket_3690/results/CIPS-3D/ffhq_diffcam_exp_v4/train_ffhq-20220224_092021_015/ckptdir/resume/G_ema.pth"
+  v4_FFHQ_r64_idx_2_1_1_freq_shift486: "/home/ma-user/work/ZhouPeng/bucket_3690/results/CIPS-3D/ffhq_diffcam_exp_v4/train_ffhq-20220223_134902_190/ckptdir/resume/G_ema.pth"
+  v4_FFHQ_r256_idx_2_1_9_freq_shift30: "/home/ma-user/work/ZhouPeng/bucket_3690/results/CIPS-3D/ffhq_diffcam_exp_v4/train_ffhq_freeze_nerf-20220224_115722_103/ckptdir/resume/G_ema.pth"
+  v4_FFHQ_r128_idx_2_1_1_freq_shift30: "/home/ma-user/work/ZhouPeng/bucket_3690/results/CIPS-3D/ffhq_diffcam_exp_v4/train_ffhq-20220223_104711_687/ckptdir/resume/G_ema.pth"
+  v4_FFHQ_r64_idx_2_1_1_freq_shift30: "/home/ma-user/work/ZhouPeng/bucket_3690/results/CIPS-3D/ffhq_diffcam_exp_v4/train_ffhq-20220222_225039_342/ckptdir/resume/G_ema.pth"
+#  v4_FFHQ_r64_shape2: "/home/ma-user/work/ZhouPeng/bucket_3690/results/CIPS-3D/ffhq_diffcam_exp_v4/train_ffhq-20220222_224654_660/ckptdir/resume/G_ema.pth"
+#  v3_FFHQ_r64_b1: "/home/ma-user/work/ZhouPeng/bucket_3690/results/CIPS-3D/ffhq_diffcam_exp_v3/train_ffhq-20220221_212808_342/ckptdir/resume/G_ema.pth"
+#  v3_FFHQ_r64_b3: "/home/ma-user/work/ZhouPeng/bucket_3690/results/CIPS-3D/ffhq_diffcam_exp_v3/train_ffhq-20220221_213111_543/ckptdir/resume/G_ema.pth"
+#  FFHQ_r64_siren_b1_norm_d_F: "/home/ma-user/work/ZhouPeng/bucket_3690/results/CIPS-3D/ffhq_diffcam_exp_v2/train_ffhq-20220221_091857_103/ckptdir/resume/G_ema.pth"
+#  FFHQ_r64_siren_b1_norm_d_T: "/home/ma-user/work/ZhouPeng/bucket_3690/results/CIPS-3D/ffhq_diffcam_exp_v2/train_ffhq-20220221_092814_741/ckptdir/resume/G_ema.pth"
+#  FFHQ_r64_siren_b3: "/home/ma-user/work/ZhouPeng/bucket_3690/results/CIPS-3D/ffhq_diffcam_exp_v2/train_ffhq-20220219_211756_715/ckptdir/resume/G_ema.pth"
+#  v2_FFHQ_r64_b1: "/home/ma-user/work/ZhouPeng/bucket_3690/results/CIPS-3D/ffhq_diffcam_exp_v2/train_ffhq-20220219_182559_307/ckptdir/resume/G_ema.pth"
+#  FFHQ_r64: "../bucket_3690/results/CIPS-3D/ffhq_diffcam_exp_v1/train_ffhq-20220218_225857_033/ckptdir/resume/G_ema.pth"
+#  FFHQ_r128: "../bucket_3690/results/CIPS-3D/ffhq_diffcam_exp_v1/train_ffhq-20220219_104511_901/ckptdir/resume/G_ema.pth"
 
 network_pkl_model: &network_pkl_model
   FFHQ_r64_siren_b3: "/home/ma-user/work/ZhouPeng/bucket_3690/results/CIPS-3D/ffhq_diffcam_exp_v2/train_ffhq-20220219_211756_715/ckptdir/resume/G_ema_model.pth"
@@ -56,34 +57,29 @@ obs_inception_v3: &obs_inception_v3
   unzip: false
 
 
-shape_net_cfg: &shape_net_cfg
-  input_dim: 3
-  hidden_dim: 256
-  out_dim: 256
-  style_dim: 256
-  N_layers: 8
-  use_pos_enc: true
-  PEF_cfg:
-    N_freqs: 10
-#  freq_scale: 1.
-#  freq_shift: 4.86
-  freq_scale: 15.
-  freq_shift: 30.
-  gradient_scale: null
-
-app_net_cfg: &app_net_cfg
-#  input_dim: 64
-  hidden_dim: 128
-  out_dim: 32
-  style_dim: 256
-  num_blocks: 1
-  disable_to_rgb: true
-  skip: false
-
 nerf_cfg: &nerf_cfg
-  shape_net_cfg: *shape_net_cfg
-  app_net_cfg: *app_net_cfg
-
+  shape_net_cfg:
+    input_dim: 3
+    hidden_dim: 256
+    out_dim: 256
+    style_dim: 256
+    N_layers: 8
+    use_pos_enc: true
+    PEF_cfg:
+      N_freqs: 10
+    freq_scale: 1.
+    freq_shift: 4.86
+#    freq_scale: 15.
+#    freq_shift: 30.
+    gradient_scale: null
+  app_net_cfg:
+  #  input_dim: 64
+    hidden_dim: 256
+    out_dim: 32
+    style_dim: 256
+    num_blocks: 1
+    disable_to_rgb: true
+    skip: false
 
 mapping_shape_cfg: &mapping_shape_cfg
   z_dim: 256
@@ -129,9 +125,10 @@ G_cfg_3D2D: &G_cfg_3D2D
   mapping_app_cfg: *mapping_app_cfg
   inr_cfg: *inr_cfg
   mapping_inr_cfg: *mapping_inr_cfg
-  shape_block_end_index: 8
+  shape_block_end_index: 2
   app_block_end_index: 1
-  inr_block_end_index: 1
+  inr_block_end_index: 4
+  inr_detach: true
 
 
 G_kwargs: &G_kwargs
@@ -161,13 +158,14 @@ _build_generator:
 
 D_cfg: &D_cfg
   register_modules:
-    - exp.cips3d.models.discriminator
-  name: exp.cips3d.models.discriminator.Discriminator_MultiScale_Aux
+    - exp.cips3d_inversion.models.discriminator
+  name: exp.cips3d_inversion.models.discriminator.Discriminator_MultiScale_Aux
   diffaug: false
   max_size: 1024
   channel_multiplier: 2
   first_downsample: false
   stddev_group: 0
+  aux_first_downsample: false
 
 _build_discriminator:
   D_cfg: *D_cfg
@@ -331,7 +329,7 @@ sampling_yaw_web:
     G_cfg: *G_cfg_3D2D
     G_kwargs: *G_kwargs
     network_pkl: *network_pkl
-    default_network_pkl: v4_FFHQ_r256_shape2_posenc_inr9
+    default_network_pkl: v4_FFHQ_r64_idx_2_1_4_inr_detach
     network_pkl_model: *network_pkl_model
     default_network_pkl_model: FFHQ_r64_siren_b1
     use_network_pkl_model: false

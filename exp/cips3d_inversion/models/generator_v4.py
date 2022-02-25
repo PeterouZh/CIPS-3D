@@ -578,6 +578,7 @@ class Generator_Diffcam(nn.Module):
                app_block_end_index=None,
                inr_block_end_index=None,
                device='cuda',
+               inr_detach=False,
                **kwargs):
     super(Generator_Diffcam, self).__init__()
 
@@ -590,10 +591,12 @@ class Generator_Diffcam(nn.Module):
       'shape_block_end_index': shape_block_end_index,
       'app_block_end_index': app_block_end_index,
       'inr_block_end_index': inr_block_end_index,
+      'inr_detach': inr_detach,
     })
 
     self.device = device
     self.inr_block_end_index = inr_block_end_index
+    self.inr_detach = inr_detach
 
     self.module_name_list = []
 
@@ -1033,7 +1036,10 @@ class Generator_Diffcam(nn.Module):
                                                             eps=nerf_kwargs['eps'])
 
     # inr_net
-    inr_img = self.inr_net(pixels_fea, style_dict, block_end_index=self.inr_block_end_index)
+    if self.inr_detach:
+      inr_img = self.inr_net(pixels_fea.detach(), style_dict, block_end_index=self.inr_block_end_index)
+    else:
+      inr_img = self.inr_net(pixels_fea, style_dict, block_end_index=self.inr_block_end_index)
 
     if return_aux_img:
       # aux rgb_branch

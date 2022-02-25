@@ -1777,10 +1777,12 @@ class Testing_ffhq_diffcam_exp_v4(unittest.TestCase):
       {'20220223_233549_972-ffhq_r128-gpu.4x8-shape_block.8-pos_enc.T-freq_shift.4.86': f"{log_file}", }
     dd[f'{bucket_root}/results/CIPS-3D/ffhq_diffcam_exp_v4/train_ffhq-20220223_235312_246'] = \
       {'20220223_235312_246-ffhq_r128-gpu.4x8-shape_block.8-pos_enc.T-freq_shift.30-gs.15': f"{log_file}", }
+    dd[f'{bucket_root}/results/CIPS-3D/ffhq_diffcam_exp_v4/train_ffhq-20220225_164209_334'] = \
+      {'20220225_164209_334-ffhq_r128-gpu.4x8-block_idx.2_1_4-inr_detach.T': f"{log_file}", }
 
     dd['properties'] = {'title': title,
                         # 'xlim': [0, 3000000],
-                        'ylim': [0, 100]
+                        # 'ylim': [0, 100]
                         }
     default_dicts[title] = dd
     show_max.append(False)
@@ -1913,7 +1915,8 @@ class Testing_ffhq_diffcam_exp_v4(unittest.TestCase):
     # ckpt_dir = "../bucket_3690/results/CIPS-3D/ffhq_diffcam_exp_v4/train_ffhq-20220222_224654_660/ckptdir/resume"
     # ckpt_dir = "../bucket_3690/results/CIPS-3D/ffhq_diffcam_exp_v4/train_ffhq-20220222_225039_342/ckptdir/resume"
     # ckpt_dir = "../bucket_3690/results/CIPS-3D/ffhq_diffcam_exp_v4/train_ffhq-20220223_134902_190/ckptdir/resume"
-    ckpt_dir = "../bucket_3690/results/CIPS-3D/ffhq_diffcam_exp_v4/train_ffhq_freeze_nerf-20220224_115722_103/ckptdir/resume"
+    ckpt_dir = "../bucket_3690/results/CIPS-3D/ffhq_diffcam_exp_v4/train_ffhq-20220225_164209_334/ckptdir/resume"
+    # ckpt_dir = "../bucket_3690/results/CIPS-3D/ffhq_diffcam_exp_v4/train_ffhq_freeze_nerf-20220224_115722_103/ckptdir/resume"
     # ckpt_dir = None
 
     if ckpt_dir is not None:
@@ -1952,9 +1955,10 @@ class Testing_ffhq_diffcam_exp_v4(unittest.TestCase):
                          return_aux_img=True,
                          **metadata)
 
+      g_imgs_aux = ret_imgs['aux_img']
+      gen_imgs = torch.cat([imgs, g_imgs_aux], dim=0)
+
       if D is not None:
-        g_imgs_aux = ret_imgs['aux_img']
-        gen_imgs = torch.cat([imgs, g_imgs_aux], dim=0)
 
         g_preds, _, _ = D(gen_imgs.to(torch.float32), alpha=1, use_aux_disc=True)
         g_loss = torch.nn.functional.softplus(-g_preds).mean()
@@ -1965,7 +1969,7 @@ class Testing_ffhq_diffcam_exp_v4(unittest.TestCase):
         grad_dict = G.get_subnet_grad_norm()
         # G_total_norm = torch.nn.utils.clip_grad_norm_(G.parameters(), 10.)
 
-    img = make_grid(imgs, nrow=2, normalize=True, scale_each=True)
+    img = make_grid(gen_imgs, nrow=num_imgs, normalize=True, scale_each=True)
     img_pil = tv_f.to_pil_image(img)
     pil_utils.imshow_pil(img_pil, f"whole {imgs.shape}")
 

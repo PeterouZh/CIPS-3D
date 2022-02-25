@@ -614,6 +614,9 @@ def train(rank,
       summary_ddict['train_aux_img']['train_aux_img'] = int(global_cfg.train_aux_img)
       summary_ddict['alpha']['alpha'] = alpha
       summary_ddict['diffaug']['diffaug'] = int(global_cfg.diffaug)
+      summary_ddict['block_idx']['shape'] = global_cfg.G_cfg.shape_block_end_index
+      summary_ddict['block_idx']['app'] = global_cfg.G_cfg.app_block_end_index
+      summary_ddict['block_idx']['inr'] = global_cfg.G_cfg.inr_block_end_index
       with torch.no_grad():
         fx, fy = cam_param.get_focal()
         summary_ddict['intr']['fx'] = fx.item()
