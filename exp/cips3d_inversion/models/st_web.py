@@ -167,8 +167,6 @@ class STModel(object):
                        saved_suffix_state=None,
                        **kwargs):
 
-    network_pkl = st_utils.selectbox_v1('network_pkl', options_dict=cfg.network_pkl,
-                                        default_key=cfg.default_network_pkl, sidebar=True)
     network_pkl_model = st_utils.selectbox_v1('network_pkl_model', options_dict=cfg.network_pkl_model,
                                               default_key=cfg.default_network_pkl_model, sidebar=True)
     use_network_pkl_model = st_utils.checkbox('use_network_pkl_model', cfg.use_network_pkl_model)
@@ -193,6 +191,9 @@ class STModel(object):
     show_weights_sum = st_utils.checkbox('show_weights_sum', True)
 
     seed = st_utils.get_seed(seeds=cfg.seeds)
+
+    network_pkl = st_utils.selectbox_v1('network_pkl', options_dict=cfg.network_pkl,
+                                        default_key=cfg.default_network_pkl, sidebar=True)
 
     if not global_cfg.tl_debug:
       if not st.sidebar.button("run_web"):

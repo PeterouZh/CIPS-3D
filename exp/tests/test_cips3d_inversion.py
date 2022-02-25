@@ -1853,7 +1853,7 @@ class Testing_ffhq_diffcam_exp_v4(unittest.TestCase):
     :return:
     """
     if 'CUDA_VISIBLE_DEVICES' not in os.environ:
-      os.environ['CUDA_VISIBLE_DEVICES'] = '1'
+      os.environ['CUDA_VISIBLE_DEVICES'] = '0'
     if 'TIME_STR' not in os.environ:
       os.environ['TIME_STR'] = '0'
     if 'RUN_NUM' not in os.environ:
@@ -1908,7 +1908,7 @@ class Testing_ffhq_diffcam_exp_v4(unittest.TestCase):
     metadata['nerf_kwargs']['v_stddev'] = 0.
 
     num_imgs = 2
-    H = W = 128
+    H = W = 64
     # N_rays = 1024
     N_rays = -1
 

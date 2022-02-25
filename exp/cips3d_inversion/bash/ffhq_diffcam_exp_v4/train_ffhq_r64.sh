@@ -70,7 +70,7 @@ python -c "from exp.tests.test_cips3d_inversion import Testing_ffhq_diffcam_exp_
     warmup_D True fade_steps 10000 \
     train_aux_img True G_kwargs.nerf_kwargs.N_samples 12 G_kwargs.nerf_kwargs.N_importance 12 \
     grad_points 64 \
-    G_cfg.shape_block_end_index 2 G_cfg.app_block_end_index 1 G_cfg.inr_block_end_index 4 \
+    G_cfg.shape_block_end_index 2 G_cfg.app_block_end_index 1 G_cfg.inr_block_end_index 9 \
     G_cfg.nerf_cfg.shape_net_cfg.use_pos_enc True G_cfg.nerf_cfg.shape_net_cfg.gradient_scale None \
     G_cfg.nerf_cfg.shape_net_cfg.freq_scale 1. G_cfg.nerf_cfg.shape_net_cfg.freq_shift 4.86 \
     G_cfg.inr_detach True \
