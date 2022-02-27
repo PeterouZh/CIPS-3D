@@ -782,7 +782,7 @@ class Generator_Diffcam(nn.Module):
                          forward_points=None,
                          **kwargs):
 
-    if forward_points is not None and forward_points < rays_o.shape[1]: # no gradients
+    if forward_points is not None and forward_points <= rays_o.shape[1]: # no gradients
       # stage forward
       with torch.no_grad():
         batch_size = rays_o.shape[0]
