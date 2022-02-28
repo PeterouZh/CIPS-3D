@@ -66,8 +66,6 @@ class STModel(object):
                         saved_suffix_state=None,
                         **kwargs):
 
-    network_pkl = st_utils.selectbox_v1('network_pkl', options_dict=cfg.network_pkl,
-                                        default_key=cfg.default_network_pkl, sidebar=True)
     network_pkl_model = st_utils.selectbox_v1('network_pkl_model', options_dict=cfg.network_pkl_model,
                                               default_key=cfg.default_network_pkl_model, sidebar=True)
     use_network_pkl_model = st_utils.checkbox('use_network_pkl_model', cfg.use_network_pkl_model)
@@ -88,7 +86,12 @@ class STModel(object):
     nerf_N_importance = st_utils.number_input('nerf_N_importance', cfg.nerf_N_importance, sidebar=True)
     forward_points = st_utils.number_input('forward_points', cfg.forward_points, sidebar=True)
 
+    show_depth = st_utils.checkbox('show_depth', True)
+
     seed = st_utils.get_seed(seeds=cfg.seeds)
+
+    network_pkl = st_utils.selectbox_v1('network_pkl', options_dict=cfg.network_pkl,
+                                        default_key=cfg.default_network_pkl, sidebar=True)
 
     if not global_cfg.tl_debug:
       if not st.sidebar.button("run_web"):
@@ -109,11 +112,15 @@ class STModel(object):
     if use_network_pkl_model:
       G = torch.load(network_pkl_model).cuda()
     else:
-      G = build_model(cfg.G_cfg).cuda()
+      load_G_cfg = TLCfgNode.load_yaml_file(cfg_filename=f"{os.path.dirname(network_pkl)}/config_command.yaml")
+      load_G_cfg = list(load_G_cfg.values())[0]
+      G = build_model(load_G_cfg.G_cfg).cuda()
       Checkpointer(G).load_state_dict_from_file(network_pkl)
+      cfg = load_G_cfg
 
     H = W = img_size
-    cam_param = cam_params.CamParams.from_config(H0=H, W0=W).cuda()
+    cam_cfg = cfg.get('cam_cfg', {})
+    cam_param = cam_params.CamParams.from_config(H0=H, W0=W, **cam_cfg).cuda()
 
     intr = cam_param(mode='get_intrinsic')
     rays_o, rays_d, select_inds = cam_param.get_rays_random_pose(
@@ -148,7 +155,19 @@ class STModel(object):
                              forward_points=forward_points ** 2,  # disable gradients
                              return_aux_img=True,
                              **G_kwargs)
-        img = make_grid(imgs, nrow=int(math.sqrt(bs)), normalize=True, scale_each=True)
+          g_imgs_aux = ret_imgs['aux_img']
+
+          imgs = norm_ip(imgs, -1, 1)
+          g_imgs_aux = norm_ip(g_imgs_aux, -1, 1)
+          img_list = [imgs, g_imgs_aux]
+
+          if show_depth:
+            depth_img = ret_imgs['depth'][:, None].expand(-1, 3, -1, -1)
+            depth_img = norm_ip(depth_img, 0, 1.5)
+            img_list.append(depth_img)
+
+        gen_imgs = torch.cat(img_list, dim=0)
+        img = make_grid(gen_imgs, nrow=bs, normalize=False)
         img_pil = tv_f.to_pil_image(img)
         img_str = f"{idx}-{(idx+1)%N_samples}/{N_samples}, t={t:.2f}"
         pil_utils.add_text(img_pil, img_str, size=img_pil.size[0]//18)

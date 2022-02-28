@@ -21,7 +21,12 @@ modelarts_download: &modelarts_download
 
 
 network_pkl: &network_pkl
+  v4_FFHQ_r128_idx_2_1_9_inr_detach: "/home/ma-user/work/ZhouPeng/bucket_3690/results/CIPS-3D/ffhq_diffcam_exp_v4/train_ffhq-20220227_232054_529/ckptdir/resume/G_ema.pth"
+  v4_FFHQ_r64_idx_2_1_9_inr_detach: "/home/ma-user/work/ZhouPeng/bucket_3690/results/CIPS-3D/ffhq_diffcam_exp_v4/train_ffhq-20220225_223444_066/ckptdir/resume/G_ema.pth"
+  v4_FFHQ_r128_idx_2_1_4_inr_detach: "/home/ma-user/work/ZhouPeng/bucket_3690/results/CIPS-3D/ffhq_diffcam_exp_v4/train_ffhq-20220227_232853_341/ckptdir/resume/G_ema.pth"
   v4_FFHQ_r64_idx_2_1_4_inr_detach: "/home/ma-user/work/ZhouPeng/bucket_3690/results/CIPS-3D/ffhq_diffcam_exp_v4/train_ffhq-20220225_164209_334/ckptdir/resume/G_ema.pth"
+  v4_FFHQ_r128_idx_2_1_9_inr_detach_c128: "/home/ma-user/work/ZhouPeng/bucket_3690/results/CIPS-3D/ffhq_diffcam_exp_v4/train_ffhq-20220227_233438_211/ckptdir/resume/G_ema.pth"
+  v4_FFHQ_r64_idx_2_1_9_inr_detach_c128: "/home/ma-user/work/ZhouPeng/bucket_3690/results/CIPS-3D/ffhq_diffcam_exp_v4/train_ffhq-20220225_225313_381/ckptdir/resume/G_ema.pth"
   v4_FFHQ_r128_idx_2_1_1_freq_shift486: "/home/ma-user/work/ZhouPeng/bucket_3690/results/CIPS-3D/ffhq_diffcam_exp_v4/train_ffhq-20220224_092021_015/ckptdir/resume/G_ema.pth"
   v4_FFHQ_r64_idx_2_1_1_freq_shift486: "/home/ma-user/work/ZhouPeng/bucket_3690/results/CIPS-3D/ffhq_diffcam_exp_v4/train_ffhq-20220223_134902_190/ckptdir/resume/G_ema.pth"
   v4_FFHQ_r256_idx_2_1_9_freq_shift30: "/home/ma-user/work/ZhouPeng/bucket_3690/results/CIPS-3D/ffhq_diffcam_exp_v4/train_ffhq_freeze_nerf-20220224_115722_103/ckptdir/resume/G_ema.pth"
@@ -291,12 +296,12 @@ interpolate_z_web:
     G_cfg: *G_cfg_3D2D
     G_kwargs: *G_kwargs
     network_pkl: *network_pkl
-    default_network_pkl: FFHQ_r64
+    default_network_pkl: v4_FFHQ_r128_idx_2_1_9_inr_detach
     network_pkl_model: *network_pkl_model
     default_network_pkl_model: FFHQ_r64_siren_b1
-    use_network_pkl_model: true
+    use_network_pkl_model: false
     bs: 4
-    img_size: 128
+    img_size: 256
     N_samples: 5
     N_step: 20
     fps: 20

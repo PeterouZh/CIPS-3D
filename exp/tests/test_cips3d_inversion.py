@@ -1803,6 +1803,12 @@ class Testing_ffhq_diffcam_exp_v4(unittest.TestCase):
     #   {'20220224_091527_603-ffhq_r128-gpu.4x8-shape_block.2-freq_shift.4.86': f"{log_file}", }
     dd[f'{bucket_root}/results/CIPS-3D/ffhq_diffcam_exp_v4/train_ffhq-20220224_092021_015'] = \
       {'20220224_092021_015-ffhq_r128-gpu.4x8-shape_block.2-freq_shift.4.86': f"{log_file}", }
+    dd[f'{bucket_root}/results/CIPS-3D/ffhq_diffcam_exp_v4/train_ffhq-20220227_232054_529'] = \
+      {'20220227_232054_529-ffhq_r128-gpu.4x8-block_idx.2_1_9-inr_detach.T': f"{log_file}", }
+    dd[f'{bucket_root}/results/CIPS-3D/ffhq_diffcam_exp_v4/train_ffhq-20220227_232853_341'] = \
+      {'20220227_232853_341-ffhq_r128-gpu.4x8-block_idx.2_1_9-inr_detach.T-2_1_4': f"{log_file}", }
+    dd[f'{bucket_root}/results/CIPS-3D/ffhq_diffcam_exp_v4/train_ffhq-20220227_233438_211'] = \
+      {'20220227_233438_211-ffhq_r128-gpu.4x8-block_idx.2_1_9-inr_detach.T-app.c128': f"{log_file}", }
 
     dd['properties'] = {'title': title,
                         # 'xlim': [0, 3000000],
@@ -2187,6 +2193,67 @@ class Testing_ffhq_diffcam_exp_v4(unittest.TestCase):
     # modelarts_utils.modelarts_sync_results_dir(global_cfg, join=True)
     pass
 
+  def test_interpolate_z_web(self, debug=True):
+    """
+    Usage:
+        source activate PyTorch-1.8
+
+        export CUDA_VISIBLE_DEVICES=0
+        export TIME_STR=0
+        export PYTHONPATH=.:./tl2_lib
+        python -c "from exp.tests.test_cips3d_inversion import Testing_ffhq_diffcam_exp_v4;\
+          Testing_ffhq_diffcam_exp_v4().test_interpolate_z_web(debug=False)" \
+          --tl_opts port 8501
+
+    :return:
+    """
+    if 'CUDA_VISIBLE_DEVICES' not in os.environ:
+      os.environ['CUDA_VISIBLE_DEVICES'] = '1'
+    if 'TIME_STR' not in os.environ:
+      os.environ['TIME_STR'] = '0'
+    from tl2 import tl2_utils
+    from tl2.launch.launch_utils import \
+      (get_command_and_outdir, setup_outdir_and_yaml, get_append_cmd_str, start_cmd_run)
+
+    tl_opts_list = tl2_utils.parser_args_from_list(name="--tl_opts", argv_list=sys.argv, type='list')
+    tl_opts = ' '.join(tl_opts_list)
+    print(f'tl_opts:\n {tl_opts}')
+
+    command, outdir = get_command_and_outdir(self, func_name=sys._getframe().f_code.co_name, file=__file__)
+    argv_str = f"""
+                --tl_config_file exp/cips3d_inversion/configs/ffhq_diffcam_exp_v4.yaml
+                --tl_command {command}
+                --tl_outdir {outdir}
+                --tl_opts {tl_opts}
+                """
+    args, cfg = setup_outdir_and_yaml(argv_str, return_cfg=True)
+
+    n_gpus = len(os.environ['CUDA_VISIBLE_DEVICES'].split(','))
+
+    # script = "tl2_lib/tl2/proj/streamlit/scripts/run_web.py"
+    script = importlib.import_module('tl2.proj.streamlit.scripts.run_web').__file__
+    if debug:
+      cmd_str = f"""
+          python 
+            {script}
+            {get_append_cmd_str(args)}
+            --tl_debug
+            --tl_opts
+              """
+    else:
+      cmd_str_prefix = f"""
+              {os.path.dirname(sys.executable)}/streamlit run --server.port {cfg.port} 
+              {script}
+              --
+            """
+      cmd_str = f"""
+          {cmd_str_prefix}
+            {get_append_cmd_str(args)}
+            --tl_opts {tl_opts}
+        """
+    start_cmd_run(cmd_str)
+    pass
+
   def test_sampling_yaw_web(self, debug=True):
     """
     Usage:
@@ -2202,7 +2269,7 @@ class Testing_ffhq_diffcam_exp_v4(unittest.TestCase):
     :return:
     """
     if 'CUDA_VISIBLE_DEVICES' not in os.environ:
-      os.environ['CUDA_VISIBLE_DEVICES'] = '0'
+      os.environ['CUDA_VISIBLE_DEVICES'] = '1'
     if 'TIME_STR' not in os.environ:
       os.environ['TIME_STR'] = '0'
     from tl2 import tl2_utils
