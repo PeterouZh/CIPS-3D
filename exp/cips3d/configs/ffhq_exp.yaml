@@ -226,7 +226,9 @@ sample_images:
   img_size: 256
 #  network_pkl: cache_pretrained/cips3d/G_ema_ffhq.pth
 #  network_pkl: "../bucket_3690/results/CIPS-3D/ffhq_exp/train_ffhq-20220125_163018_465/ckptdir/best_fid/G_ema.pth"
-  network_pkl: "../bucket_3690/results/CIPS-3D/ffhq_exp/train_ffhq_high-20220105_143314_190/ckptdir/best_fid/G_ema.pth"
+#  network_pkl: "../bucket_3690/results/CIPS-3D/ffhq_exp/train_ffhq_high-20220105_143314_190/ckptdir/best_fid/G_ema.pth"
+  network_pkl: "cache_pretrained/train_ffhq_high-20220105_143314_190/resume_iter_645500/G_ema.pth"
+
 
 render_video_web:
   port: 8501

@@ -37,9 +37,6 @@ class CIPS_3D_Demo(object):
     target_network_pkl = st_utils.selectbox('target_network_pkl', cfg.target_network_pkl)
     model_pkl_input = st_utils.text_input('model_pkl', "", sidebar=False)
 
-    swapped_layers = st_utils.parse_list_from_st_text_input('swapped_layers', cfg.swapped_layers)
-    gamma_target = st_utils.number_input('gamma_target', cfg.gamma_target, sidebar=True)
-
     num_steps = st_utils.number_input('num_steps', cfg.num_steps, sidebar=True)
     image_size = st_utils.number_input('image_size', cfg.image_size, sidebar=True)
     psi = st_utils.number_input('psi', cfg.psi, sidebar=True)
@@ -61,6 +58,9 @@ class CIPS_3D_Demo(object):
     # trajectory
     trajectory_mode = st_utils.selectbox('trajectory_mode', cfg.trajectory_mode, sidebar=True)
     forward_points = st_utils.number_input('forward_points', cfg.forward_points, sidebar=True)
+
+    swapped_layers = st_utils.parse_list_from_st_text_input('swapped_layers', cfg.swapped_layers)
+    gamma_target = st_utils.number_input('gamma_target', cfg.gamma_target, sidebar=True)
 
     # ****************************************************************************
     if not debug:

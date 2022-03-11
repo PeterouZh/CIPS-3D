@@ -1,8 +1,11 @@
 network_pkl: &network_pkl
-  - "FFHQ_r256: datasets/pretrained/G_ema_ffhq.pth"
+  - "FFHQ_r256_v1: cache_pretrained/train_ffhq_high-20220105_143314_190/resume_iter_645500/G_ema.pth"
+  - "FFHQ_r256: cache_pretrained/pretrained/G_ema_ffhq.pth"
 
 target_network_pkl: &target_network_pkl
-  - "Cartoon_r256: datasets/pretrained/G_ema_cartoon.pth"
+  - "AFHQ_r256_v1: cache_pretrained/finetune_afhq-20220124_193407_473/resume_iter200000/G_ema.pth"
+  - "Cartoon_r256_v1: cache_pretrained/finetune_photo2cartoon-20220107_172255_454/resume_iter29050/G_ema.pth"
+  - "Cartoon_r256: cache_pretrained/pretrained/G_ema_cartoon.pth"
 
 
 G_cfg_3D2D: &G_cfg_3D2D
@@ -49,27 +52,30 @@ model_interpolation:
     G_cfg: *G_cfg_3D2D
     network_pkl: *network_pkl
     target_network_pkl: *target_network_pkl
-    swapped_layers: [1024, 512, 256, 128, 64, 32, 16, 8, 4]
-    gamma_target: 0.4
+#    swapped_layers: [1024, 512, 256, 128, 64, 32, 16, 8, 4]
+    swapped_layers: [1024, 512, 256, 128, 64, 32]
+    gamma_target: 0.5
     metadata: "datasets/pretrained/metadata.json"
     num_steps: 24
     image_size: 512
-    psi: 0.95
+    psi: 1.
     trajectory_mode:
       - circle_near_far
       - translate_circle_near_far
       - circle
       - yaw
     seeds_gallery:
-      - 72216891
-      - 88542011
-      - 92577341
-      - 86271113
-      - 92674084
-      - 578916
-      - 99738897
-      - 99860786
-      - 354348
+      - 64400648
+      - 20905819
+#      - 72216891
+#      - 88542011
+#      - 92577341
+#      - 86271113
+#      - 92674084
+#      - 578916
+#      - 99738897
+#      - 99860786
+#      - 354348
     fps: 40
     num_frames: 70
     num_samples_translate: 30

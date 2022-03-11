@@ -2259,7 +2259,7 @@ class Testing_ffhq_diffcam_exp_v4(unittest.TestCase):
     Usage:
         source activate PyTorch-1.8
 
-        export CUDA_VISIBLE_DEVICES=1
+        export CUDA_VISIBLE_DEVICES=0
         export TIME_STR=0
         export PYTHONPATH=.:./tl2_lib
         python -c "from exp.tests.test_cips3d_inversion import Testing_ffhq_diffcam_exp_v4;\
