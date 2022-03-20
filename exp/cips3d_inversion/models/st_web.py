@@ -24,7 +24,7 @@ from tl2 import tl2_utils
 from tl2.proj.streamlit import st_utils
 from tl2.proj.fvcore import build_model, MODEL_REGISTRY
 from tl2.proj.pytorch import torch_utils
-from tl2.proj.pytorch.examples.nerf import cam_params
+from tl2.proj.pytorch.examples.nerf import cam_params_pigan
 from tl2.proj.fvcore.checkpoint import Checkpointer
 from tl2.proj.pil import pil_utils
 from tl2.proj.cv2 import cv2_utils
@@ -112,15 +112,19 @@ class STModel(object):
     if use_network_pkl_model:
       G = torch.load(network_pkl_model).cuda()
     else:
-      load_G_cfg = TLCfgNode.load_yaml_file(cfg_filename=f"{os.path.dirname(network_pkl)}/config_command.yaml")
-      load_G_cfg = list(load_G_cfg.values())[0]
+      ori_cfg_file = f"{os.path.dirname(network_pkl)}/config_command.yaml"
+      if os.path.exists(ori_cfg_file):
+        load_G_cfg = TLCfgNode.load_yaml_file(cfg_filename=ori_cfg_file)
+        load_G_cfg = list(load_G_cfg.values())[0]
+      else:
+        load_G_cfg = cfg
       G = build_model(load_G_cfg.G_cfg).cuda()
       Checkpointer(G).load_state_dict_from_file(network_pkl)
       cfg = load_G_cfg
 
     H = W = img_size
     cam_cfg = cfg.get('cam_cfg', {})
-    cam_param = cam_params.CamParams.from_config(H0=H, W0=W, **cam_cfg).cuda()
+    cam_param = cam_params_pigan.CamParams.from_config(H0=H, W0=W, **cam_cfg).cuda()
 
     intr = cam_param(mode='get_intrinsic')
     rays_o, rays_d, select_inds = cam_param.get_rays_random_pose(
@@ -130,8 +134,8 @@ class STModel(object):
     video_f = cv2_utils.ImageioVideoWriter(f"{outdir}/video.mp4", fps=fps, hd_video=True)
 
     G.eval()
-    zs = G.get_zs(bs)
-    zs_list = [G.get_zs(bs) for _ in range(N_samples)]
+    zs = G.get_zs(bs, merge_z_shape_app=False)
+    zs_list = [G.get_zs(bs, merge_z_shape_app=False) for _ in range(N_samples)]
 
     for idx in range(N_samples):
       zs1 = zs_list[idx]
@@ -233,15 +237,19 @@ class STModel(object):
     if use_network_pkl_model:
       G = torch.load(network_pkl_model).cuda()
     else:
-      load_G_cfg = TLCfgNode.load_yaml_file(cfg_filename=f"{os.path.dirname(network_pkl)}/config_command.yaml")
-      load_G_cfg = list(load_G_cfg.values())[0]
+      ori_cfg_file = f"{os.path.dirname(network_pkl)}/config_command.yaml"
+      if os.path.exists(ori_cfg_file):
+        load_G_cfg = TLCfgNode.load_yaml_file(cfg_filename=ori_cfg_file)
+        load_G_cfg = list(load_G_cfg.values())[0]
+      else:
+        load_G_cfg = cfg
       G = build_model(load_G_cfg.G_cfg).cuda()
       Checkpointer(G).load_state_dict_from_file(network_pkl)
       cfg = load_G_cfg
 
     H = W = img_size
     cam_cfg = cfg.get('cam_cfg', {})
-    cam_param = cam_params.CamParams.from_config(H0=H, W0=W, **cam_cfg).cuda()
+    cam_param = cam_params_pigan.CamParams.from_config(H0=H, W0=W, **cam_cfg).cuda()
     intr = cam_param(mode='get_intrinsic')
 
 
@@ -276,7 +284,7 @@ class STModel(object):
 
         if show_depth:
           depth_img = ret_imgs['depth'][:, None].expand(-1, 3, -1, -1)
-          depth_img = norm_ip(depth_img, 0, 1.5)
+          depth_img = norm_ip(depth_img, G_kwargs.nerf_kwargs['near'], G_kwargs.nerf_kwargs['far'])
           img_list.append(depth_img)
         if show_weights_sum:
           weights_sum = ret_imgs['weights_sum'][:, None].expand(-1, 3, -1, -1)
