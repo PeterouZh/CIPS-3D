@@ -113,7 +113,8 @@ G_cfg_3D2D: &G_cfg_3D2D
   app_block_end_index: 1
   inr_block_end_index: 9
   inr_detach: true
-
+#  inr_block_end_index: 0
+#  inr_detach: false
 
 G_kwargs: &G_kwargs
   psi: 1.
