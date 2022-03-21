@@ -8,7 +8,7 @@ This repository contains the code of the paper, </br >
 :heavy_check_mark: (2021-11-26) The configuration files (yaml files) for training are being released.
 
 :heavy_check_mark: (2021-10-27) All the code files have been released. The configuration files (yaml files) for training will be released next. Now I have provided a GUI script and models to facilitate the experiment of network interpolation (see below). If you find any problems, please open an issue. Have fun with it. 
-<img src=".github/web_demo.png" height="400" width="700">
+<img src=".github/web_demo1.jpg" height="400" width="700">
 
 :heavy_check_mark: (2021-10-25) Thank you for your kind attention. The github star has reached two hundred. I will open source the training code in the near future. 
 
@@ -66,8 +66,7 @@ pip install -e pytorch_ema_lib
 
 ## Model interpolation (web demo) 
 
-Download the pre-trained model [G_ema_ffhq.pth](https://github.com/PeterouZh/CIPS-3D/releases/download/v0.0.1/G_ema_ffhq.pth) 
-and [G_ema_cartoon.pth](https://github.com/PeterouZh/CIPS-3D/releases/download/v0.0.1/G_ema_cartoon.pth), and put them in `datasets/pretrained`.
+Download the [pre-trained checkpoints](#pre-trained-checkpoints).
 
 Execute this command:
 ```bash
@@ -88,6 +87,14 @@ python scripts/web_demo.py  \
   --debug True
 
 ```
+## Pre-trained checkpoints 
+
+|   | ffhq_exp |
+|:---:|:---:|
+| FFHQ_r256  | [train_ffhq_high-20220105_143314_190](https://github.com/PeterouZh/CIPS-3D/releases/download/v0.0.2/train_ffhq_high-20220105_143314_190.zip)  |
+| AFHQ_r256 | [finetune_afhq-20220124_193407_473](https://github.com/PeterouZh/CIPS-3D/releases/download/v0.0.3/finetune_afhq-20220124_193407_473_r256.zip) |
+| CartoonFaces_r256 | [finetune_photo2cartoon-20220107_172255_454](https://github.com/PeterouZh/CIPS-3D/releases/download/v0.0.3/finetune_photo2cartoon-20220107_172255_454_r256.zip) |
+
 
 <details>
 <summary>Prepare dataset</summary>
@@ -119,9 +126,6 @@ python scripts/dataset_tool.py \
     
 ```
 
-
-
-
 </details>
 
 ## Training 
@@ -143,12 +147,6 @@ I will release all the pre-trained models when the reproducing is over.
 - `exp/cips3d/bash/ffhq_exp_v1:`
 
 - `exp/cips3d/bash/afhq_exp:`
-
-## Pre-trained checkpoints (including generator and discriminator)
-
-|   | ffhq_exp |
-|:---:|:---:|
-| ffhq_r256  | [train_ffhq_high-20220105_143314_190](https://github.com/PeterouZh/CIPS-3D/releases/download/v0.0.2/train_ffhq_high-20220105_143314_190.zip)  |
 
 
 ## Bug fixed
