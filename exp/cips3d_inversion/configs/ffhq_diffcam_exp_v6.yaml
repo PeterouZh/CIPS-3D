@@ -209,6 +209,7 @@ train_ffhq:
   r1_lambda: 10.
   d_reg_every: 1
   train_aux_img: true
+#  train_aux_img: false
   update_aux_every: 1
   grad_clip: 10
   forward_points: 256
@@ -249,6 +250,21 @@ train_ffhq_freeze_nerf:
   nerf_noise_disable: true
   finetune_dir: "results/CIPS-3D/ffhq_diffcam_exp_v4/train_ffhq-20220223_104711_687/ckptdir/resume"
 
+
+train_ffhq_nerf:
+  base: train_ffhq
+  G_cfg:
+    inr_block_end_index: 0
+    inr_detach: false
+    disable_inr: true
+  D_cfg:
+    first_downsample: true
+    stddev_group: 4
+    aux_first_downsample: true
+  d_reg_every: 16
+  train_aux_img: false
+  load_finetune: false
+  finetune_dir: "keras/CIPS-3D/cache_pretrained/pretrained/G_ema_celeba_converted"
 
 
 eval_fid:

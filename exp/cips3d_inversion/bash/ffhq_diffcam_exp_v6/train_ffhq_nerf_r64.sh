@@ -61,24 +61,26 @@ export PORT=12346
 #
 export PYTHONPATH=.:./tl2_lib
 
-# bash = bash CIPS-3D/exp/cips3d_inversion/bash/ffhq_diffcam_exp_v6/train_ffhq_r64.sh 0 bucket-3690
+# bash = bash CIPS-3D/exp/cips3d_inversion/bash/ffhq_diffcam_exp_v6/train_ffhq_nerf_r64.sh 0 bucket-3690
 
 python -c "from exp.tests.test_cips3d_inversion import Testing_ffhq_diffcam_exp_v6;\
-  Testing_ffhq_diffcam_exp_v6().test_train_ffhq(debug=False)" \
+  Testing_ffhq_diffcam_exp_v6().test_train_ffhq_nerf(debug=False)" \
   --tl_opts \
     batch_size 4 img_size 64 total_iters 200000 \
-    warmup_D True fade_steps 10000 \
-    gen_lr 0.00006 disc_lr 0.001 \
-    train_aux_img True G_kwargs.nerf_kwargs.N_samples 12 G_kwargs.nerf_kwargs.N_importance 12 \
+    warmup_D False fade_steps 10000 \
+    gen_lr 0.0001 disc_lr 0.001 \
+    train_aux_img False G_kwargs.nerf_kwargs.N_samples 12 G_kwargs.nerf_kwargs.N_importance 12 \
     grad_points 64 \
-    G_cfg.shape_block_end_index 8 G_cfg.app_block_end_index 1 G_cfg.inr_block_end_index 9 \
-    G_cfg.inr_detach True \
+    G_cfg.shape_block_end_index 8 G_cfg.app_block_end_index 1 G_cfg.inr_block_end_index 0 \
+    G_cfg.inr_detach False \
+    G_cfg.disable_inr True D_cfg.stddev_group 0 \
     load_finetune True finetune_dir keras/CIPS-3D/cache_pretrained/pretrained/G_ema_celeba_converted
 #    load_finetune False
 
 
-#  --tl_outdir results/ffhq_exp/train_ffhq
 
+
+#  --tl_outdir results/ffhq_exp/train_ffhq
 
 #bucket=${2:-bucket-3690}
 #proj_root=CIPS-3D
@@ -86,8 +88,9 @@ python -c "from exp.tests.test_cips3d_inversion import Testing_ffhq_diffcam_exp_
 #  -s s3://$bucket/ZhouPeng/codes/$proj_root \
 #  -d /cache/$proj_root \
 #  -t copytree -b /cache/$proj_root/code.zip
-#bash /cache/CIPS-3D/exp/cips3d_inversion/bash/ffhq_diffcam_exp_v6/train_ffhq_r64.sh 0 bucket-3690
-#
+#bash /cache/CIPS-3D/exp/cips3d_inversion/bash/ffhq_diffcam_exp_v6/train_ffhq_nerf_r64.sh 0 bucket-3690
+
+
 
 
 
