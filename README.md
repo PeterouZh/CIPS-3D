@@ -1,7 +1,11 @@
-## CIPS-3D
+<p float="left">
+		<img src="https://github.com/PeterouZh/CIPS-3D/assets/26176709/628f6cde-75e8-49a8-8d29-1c7dda5f2cda" width="330">
+</p>
 
-This repository contains the code of the paper, </br > 
-[CIPS-3D: A 3D-Aware Generator of GANs Based on Conditionally-Independent Pixel Synthesis](https://arxiv.org/abs/2110.09788).
+
+This repository contains the code of the paper [CIPS-3D: A 3D-Aware Generator of GANs Based on Conditionally-Independent Pixel Synthesis](https://arxiv.org/abs/2110.09788). For 3D GAN inversion and editing of real images, please refer to this repository: [https://github.com/PeterouZh/CIPS-3Dplusplus](https://github.com/PeterouZh/CIPS-3Dplusplus) (CIPS-3D++).
+
+## Updates
 
 :heavy_check_mark: (2022-1-5) The code has been refactored. Please refer to the scripts in `exp/cips3d/bash`. Please upgrade the `tl2` package with `pip install -I tl2`.
 
